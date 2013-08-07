@@ -42,6 +42,9 @@ DnDUpload.prototype = {
   
   serverUploadLimit : 4,
   
+  message : {
+    BROWSER_NOT_SUPPORTED : 'the browser doesn\'t support the awesome dran n\' drop method!'
+  },
          
   sizeType: {
     0: 'byte', 1024: 'kb', 1048576: 'mb', 1073741824: 'gb', 1099511627776: 'tb'
@@ -71,13 +74,13 @@ DnDUpload.prototype = {
   
           
   init: function(options) {
-
     this._setOptions(options);
-
     this._buildDropZone();
-
-    this._addEventListener();
     
+    
+    if(this._checkBrowser()){
+      this._addEventListener();      
+    }
   },
           
   
@@ -87,31 +90,21 @@ DnDUpload.prototype = {
     //this.Element.addEventListener('mouseover',  function(event){DnDUpload.prototype.onMouseOver(event,_this);return false;});
     //this.Element.addEventListener('mouseout',   function(event){DnDUpload.prototype.onMouseOut(event,_this);return false;});
     
-    //this.Element.addEventListener('ondragover',   function(event){return false;});
-    //this.Element.addEventListener('dragout',    function(event){DnDUpload.prototype.onMouseOut(event,_this);return false;});
-    //this.Element.addEventListener('dragend',    function(event){DnDUpload.prototype.onMouseOut(event,_this);return false;});
-    
-    
-    //this.Element.ondragover   = function(e){return false};
-    this.Element.addEventListener('dragover',     function(event){DnDUpload.prototype.onMouseOver(event,_this);return false;});
-    this.Element.addEventListener('dragexit',     function(event){DnDUpload.prototype.onMouseOut(event,_this);return false;});
-    this.Element.addEventListener('drop',         function(event){DnDUpload.prototype.onDrop(event,_this);return false;});
-    
-    
+    this.Element.addEventListener('dragover', function(event){DnDUpload.prototype.onDragOver(event,_this);return false;});
+    this.Element.addEventListener('dragexit', function(event){DnDUpload.prototype.onDragEnd(event,_this);return false;});
+    this.Element.addEventListener('dragend',  function(event){DnDUpload.prototype.onDragEnd(event,_this);return false;});
+    this.Element.addEventListener('drop',     function(event){DnDUpload.prototype.onDrop(event,_this);return false;});
   },
     
-          
-  onMouseOver : function(event,_this){
+  onDragOver : function(event,_this){
     event.preventDefault();event.stopPropagation();      
-    
     var DD = _this.Element.getElementsByClassName('DropZone')[0];
-    //console.log(DD.className); //.add('enter');
+    DD.classList.add('enter');
     return false;
   },
           
-  onMouseOut  : function(event,_this){
+  onDragEnd : function(event,_this){
     event.preventDefault();event.stopPropagation();      
-    
     var DD = _this.Element.getElementsByClassName('DropZone')[0];
     DD.classList.remove('enter');
     return false;
@@ -123,11 +116,9 @@ DnDUpload.prototype = {
     var DD = _this.Element.getElementsByClassName('DropZone')[0];
     
     var dropData = event.dataTransfer;
-    //console.log(dropData);
-    console.dir(dropData);
+    console.log(dropData);
     
     return false;
-    
   },          
           
           
@@ -174,6 +165,26 @@ DnDUpload.prototype = {
           _this[key] = value;
       },this);      
     }
+  },
+          
+          
+  _checkBrowser : function(){
+
+    if(window.FileReader===undefined){
+      var error = document.createElement('div');
+      error.className = 'error';
+      error.innerHTML = [
+        '<div class="message">Your browser does not support drag\'n\'drop file uploads.</div>',
+        '<div class="supportedBrowsers">',
+          '<div class="ff"><span>FireFox</span></div>',
+          '<div class="chrome"><span>Chrome</span></div>',
+          '<div class="ie10"><span>IE 10</span></div>',
+        '</div>'
+      ].join("");
+      this.Element.firstChild.appendChild(error);
+      return false;
+    }
+    return true;
   },
 
 

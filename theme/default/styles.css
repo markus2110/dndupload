@@ -98,3 +98,33 @@
   border:solid 1px #dddddd;
   color:#5E5E5E;
 }
+
+
+
+
+/* ERROR */
+.DropZone.default .error{
+  border:solid 1px #FA6E6E;
+  background: #FFBDBD;
+  width : 90%;
+  margin: 0px auto;
+  text-align:center;
+  position:relative;
+  
+}
+.DropZone.default .error .supportedBrowsers div{
+  display:inline-block;
+  width : 48px;
+  height : 60px;
+  margin : 5px;
+  font-size:9px;
+}
+
+.DropZone.default .error .supportedBrowsers div span{
+  position:relative;
+  top:50px;
+}
+.DropZone.default .error .supportedBrowsers div.ff{background:url(icons/browsers/firefox.png) no-repeat;}
+.DropZone.default .error .supportedBrowsers div.chrome{background:url(icons/browsers/chrome.png) no-repeat;}
+.DropZone.default .error .supportedBrowsers div.ie10{background:url(icons/browsers/internet_explorer.png) no-repeat;}
+
