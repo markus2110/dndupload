@@ -26,19 +26,23 @@ DnDUpload.prototype = {
   Element: null,
           
   DropZone: null,
+  
+  FileQueue : [],
 
    
-  dropZoneHeight  : 400,
+  dropZoneHeight    : 400,
   
-  dropZoneWidth   : 400,
+  dropZoneWidth     : 400,
   
-  dropZoneText    : 'Drop here',
+  dropZoneText      : 'Drop here',
   
-  dropZoneStyle   : 'default',
+  dropZoneStyle     : 'default',
   
-  cancelButton    : 'Cancel',
+  cancelButton      : 'Cancel',
 
-  maxFileSize     : 500,
+  maxFileSize       : 500,
+  
+  totalFileSize     : 0,
   
   serverUploadLimit : 4,
   
@@ -65,7 +69,7 @@ DnDUpload.prototype = {
     '</div>',
     '<div class="progress"><span style="width:0%"></span></div>',
     '<div class="fileMeta">',
-      '<div class="fileSize"><strong>{fileSize}</strong>{fileSizeType}</div>',
+      '<div class="fileSize"><strong>{fileSize}</strong> {fileSizeType}</div>',
       '<div class="fileName" title="{fileName}">{fileName}</div>',
     '</div>',
     '<button type="button" class="cancel">{cancelButton}</button>',
@@ -78,6 +82,7 @@ DnDUpload.prototype = {
     this._buildDropZone();
     
     
+    
     if(this._checkBrowser()){
       this._addEventListener();      
     }
@@ -87,13 +92,19 @@ DnDUpload.prototype = {
   _addEventListener : function(){
     var _this = this;
     
-    //this.Element.addEventListener('mouseover',  function(event){DnDUpload.prototype.onMouseOver(event,_this);return false;});
-    //this.Element.addEventListener('mouseout',   function(event){DnDUpload.prototype.onMouseOut(event,_this);return false;});
+    this.Element.addEventListener('click',    function(event){DnDUpload.prototype.onClick(event,_this);return false;});
     
     this.Element.addEventListener('dragover', function(event){DnDUpload.prototype.onDragOver(event,_this);return false;});
     this.Element.addEventListener('dragexit', function(event){DnDUpload.prototype.onDragEnd(event,_this);return false;});
     this.Element.addEventListener('dragend',  function(event){DnDUpload.prototype.onDragEnd(event,_this);return false;});
     this.Element.addEventListener('drop',     function(event){DnDUpload.prototype.onDrop(event,_this);return false;});
+  },
+          
+  onClick : function(event,_this){          
+    // find hidden input field
+    var hiddenInput = _this.Element.getElementsByClassName('hiddenFileInput')[0];
+    hiddenInput.click();
+    return false;
   },
     
   onDragOver : function(event,_this){
@@ -115,8 +126,11 @@ DnDUpload.prototype = {
     
     var DD = _this.Element.getElementsByClassName('DropZone')[0];
     
-    var dropData = event.dataTransfer;
-    console.log(dropData);
+    var files = event.dataTransfer.files;
+    files.each(function(index,file){
+      if(typeof file === 'object')
+        _this._addFile(file);  
+    });    
     
     return false;
   },          
@@ -136,25 +150,95 @@ DnDUpload.prototype = {
     this.DropZone.style.height  = this.dropZoneHeight+'px';
     
     this.Element.appendChild(this.DropZone);
+    
+    this._createHiddenInput();
+    
     return this;
   },
           
           
-  _addFile : function(){
+  _createHiddenInput : function(){
+    var hiddenFileInput = document.createElement('input');
+    hiddenFileInput.type      = 'file';
+    hiddenFileInput.name      = 'hiddenFileInput';
+    hiddenFileInput.className = 'hiddenFileInput';
+    hiddenFileInput.style.display = 'none';
+    //hiddenFileInput.setAttribute("multiple", "multiple");
+    this.Element.appendChild(hiddenFileInput);
+    
+    // on file select
+    var _this = this;
+    hiddenFileInput.addEventListener('change', function(event){
+      this.files.each(function(index,file){
+        if(typeof file === 'object')
+          _this._addFile(file);  
+      });
+    });
+  },
+          
+  _addFile : function(fileObj){
+    
+    var readableFile = this._getReadableFileSize(fileObj.size);
+    
+    var tempVars = {
+      fileName      : fileObj.name,
+      fileType      : this._getFileType(fileObj.type),
+      fileSize      : readableFile.size,
+      fileSizeType  : readableFile.type,
+    }
     var file = document.createElement('div');
     file.className = 'file';
-    file.innerHTML = this._prepareTemplate(this.fileTemplate);
+    file.innerHTML = this._prepareTemplate(this.fileTemplate,tempVars);
     this.DropZone.getElementsByClassName('FileContainer')[0].appendChild(file);
+    
+    this.FileQueue.push({
+      file    : fileObj,
+      fileEl  : file
+    });
+    
+    this.totalFileSize += fileObj.size;
+    console.log(this._getReadableFileSize(this.totalFileSize,true));
   },
+          
+  _getReadableFileSize : function(size, precision){
+    var obj = {size: size,type : 'byte'};
+    if(size<1024) return obj;
+    for(maxSize in this.sizeType){
+      if(size<=maxSize)
+        break;
+
+      s = size/maxSize;
+      obj.size = (precision) ? Math.round(s * 100) / 100 : Math.round(s);
+      obj.type = this.sizeType[maxSize];
+    };    
+    return obj;
+  },
+          
+  _getFileType : function(type){
+    if(type.indexOf('video')>=0) 
+      fileType = 'movie';
+    else if(type.indexOf('zip')>=0) 
+      fileType = 'zip';
+    else if(type.indexOf('image')>=0) 
+      fileType = 'image';
+    else 
+      fileType = 'doc';
+
+    return fileType;
+  },          
   
   
-  _prepareTemplate : function(template){
+  _prepareTemplate : function(template, varObj){
     var html = template.join("");
     var tempVars = html.match(/\{.*?\}/g);
+    
     tempVars.each(function(key,varName,_this){
       var propName = varName.substring(1,varName.length-1);
-      html = html.replace(varName, _this[propName]);
-    },this);
+      var value = (varObj && varObj[propName]) ? varObj[propName] : _this[propName];
+      html = html.replace(varName, value);
+    },this);      
+    
+    
     return html;
   },
   

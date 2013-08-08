@@ -10,6 +10,7 @@
 .DropZone.default{
   font-family: verdana;
   font-size: 100%;
+  cursor:pointer;
   border:dashed 2px #dddddd;
   border-radius: 15px;
   -moz-border-radius: 15px;
@@ -38,7 +39,7 @@
 
 .DropZone.default .FileContainer .file{
   display: inline-block;
-  margin:5px 0px 5px 0px;
+  margin:5px 1px 5px 2px;
   padding : 5px;
   border:solid 1px #ACACAC;
   box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.16);
