@@ -25,6 +25,11 @@
   top:25px;
 }
 
+.DropZone.default .TotalUpload{
+  border:solid 1px;
+  position:relative;
+}
+
 
 .DropZone.default.enter{background:#FFFAE8;}
 .DropZone.default.enter .DropText{

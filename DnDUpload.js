@@ -14,7 +14,8 @@ Object.prototype.each = function(callback, scope) {
 
 
 var DnDUpload = function(elID, options) {
-  this.Element = document.getElementById(elID);
+  this.Element    = document.getElementById(elID);
+  this.FileQueue  = [];
   this.init(options);
 };
 
@@ -23,11 +24,13 @@ var DnDUpload = function(elID, options) {
  * @type type
  */
 DnDUpload.prototype = {
-  Element: null,
+  ID      : null,
+  
+  Element : null,
           
   DropZone: null,
   
-  FileQueue : [],
+  
 
    
   dropZoneHeight    : 400,
@@ -56,9 +59,10 @@ DnDUpload.prototype = {
   
   // DropZone Template
   dropZoneTpl: [
-    '<form name="frm{dropZoneID}" action="#" method="post" enctype="multipart/form-data">',
-        '<div id="FileContainer_{dropZoneID}" class="FileContainer"></div>',
-        '<div id="DropText_{dropZoneID}" class="DropText">{dropZoneText}</div>',
+    '<form name="frm{ID}" action="#" method="post" enctype="multipart/form-data">',
+      '<div id="FileContainer_{ID}" class="FileContainer"></div>',  
+      '<div id="DropText_{ID}" class="DropText">{dropZoneText}</div>',
+      '<div id="TotalUpload_{ID}" class="TotalUpload"></div>',    
     '</form>'
   ],
           
@@ -72,16 +76,16 @@ DnDUpload.prototype = {
       '<div class="fileSize"><strong>{fileSize}</strong> {fileSizeType}</div>',
       '<div class="fileName" title="{fileName}">{fileName}</div>',
     '</div>',
+    '<div class="removeFile"><a href="#">Remove</a></div>',
     '<button type="button" class="cancel">{cancelButton}</button>',
   ],
           
   
           
   init: function(options) {
+    this.ID = this.Element.id;
     this._setOptions(options);
     this._buildDropZone();
-    
-    
     
     if(this._checkBrowser()){
       this._addEventListener();      
@@ -92,7 +96,7 @@ DnDUpload.prototype = {
   _addEventListener : function(){
     var _this = this;
     
-    this.Element.addEventListener('click',    function(event){DnDUpload.prototype.onClick(event,_this);return false;});
+    this.DropZone.addEventListener('click',    function(event){DnDUpload.prototype.onClick(event,_this);return false;});
     
     this.Element.addEventListener('dragover', function(event){DnDUpload.prototype.onDragOver(event,_this);return false;});
     this.Element.addEventListener('dragexit', function(event){DnDUpload.prototype.onDragEnd(event,_this);return false;});
@@ -100,10 +104,12 @@ DnDUpload.prototype = {
     this.Element.addEventListener('drop',     function(event){DnDUpload.prototype.onDrop(event,_this);return false;});
   },
           
-  onClick : function(event,_this){          
+  onClick : function(event,_this){
     // find hidden input field
-    var hiddenInput = _this.Element.getElementsByClassName('hiddenFileInput')[0];
-    hiddenInput.click();
+    if(event.target===_this.DropZone){
+      hiddenInput = _this.Element.getElementsByClassName('hiddenFileInput')[0];
+      return hiddenInput.click();
+    }
     return false;
   },
     
@@ -159,16 +165,20 @@ DnDUpload.prototype = {
           
   _createHiddenInput : function(){
     var hiddenFileInput = document.createElement('input');
-    hiddenFileInput.type      = 'file';
-    hiddenFileInput.name      = 'hiddenFileInput';
-    hiddenFileInput.className = 'hiddenFileInput';
-    hiddenFileInput.style.display = 'none';
+    hiddenFileInput.type              = 'file';
+    hiddenFileInput.name              = 'hiddenFileInput';
+    hiddenFileInput.className         = 'hiddenFileInput';
+    //hiddenFileInput.style.visibility  = 'hidden';
+    hiddenFileInput.style.position    = 'absolute';
+    hiddenFileInput.style.top         = "-1000px";
+    hiddenFileInput.style.left        = "-1000px";
+    
     //hiddenFileInput.setAttribute("multiple", "multiple");
     this.Element.appendChild(hiddenFileInput);
     
     // on file select
     var _this = this;
-    hiddenFileInput.addEventListener('change', function(event){
+    return hiddenFileInput.addEventListener('change', function(event){
       this.files.each(function(index,file){
         if(typeof file === 'object')
           _this._addFile(file);  
@@ -177,7 +187,7 @@ DnDUpload.prototype = {
   },
           
   _addFile : function(fileObj){
-    
+    var _this = this;
     var readableFile = this._getReadableFileSize(fileObj.size);
     
     var tempVars = {
@@ -189,7 +199,11 @@ DnDUpload.prototype = {
     var file = document.createElement('div');
     file.className = 'file';
     file.innerHTML = this._prepareTemplate(this.fileTemplate,tempVars);
-    this.DropZone.getElementsByClassName('FileContainer')[0].appendChild(file);
+    
+    var removeTag = file.getElementsByTagName('a')[0];
+    removeTag.addEventListener('click', function(event){DnDUpload.prototype._removeFile(file,_this)});
+    
+    document.getElementById("FileContainer_"+this.ID).appendChild(file);
     
     this.FileQueue.push({
       file    : fileObj,
@@ -197,8 +211,33 @@ DnDUpload.prototype = {
     });
     
     this.totalFileSize += fileObj.size;
-    console.log(this._getReadableFileSize(this.totalFileSize,true));
+    this._calculateTotal();
   },
+          
+  _removeFile : function(file, _this){
+    
+    // todo : cancel Upload
+    
+    
+    var newQueue = [];
+    _this.FileQueue.each(function(index,fileObj,t){
+      if(fileObj.fileEl !== file){
+        newQueue.push(fileObj);
+      }
+      
+      // reduce total file size
+      else{
+        t.totalFileSize -= fileObj.file.size;
+      }
+    },_this);
+    _this.FileQueue = newQueue;
+
+    var parentEl = file.parentElement;
+    parentEl.removeChild(file);
+    
+    _this._calculateTotal();
+  },
+          
           
   _getReadableFileSize : function(size, precision){
     var obj = {size: size,type : 'byte'};
@@ -226,6 +265,14 @@ DnDUpload.prototype = {
 
     return fileType;
   },          
+          
+          
+  _calculateTotal : function(){
+    readableTotalSize = this._getReadableFileSize(this.totalFileSize,true);
+    document.getElementById("TotalUpload_"+this.ID).innerHTML = this.FileQueue.length+ " / " + readableTotalSize.size+" "+readableTotalSize.type;
+    
+    
+  },
   
   
   _prepareTemplate : function(template, varObj){
