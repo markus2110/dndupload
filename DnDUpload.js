@@ -30,29 +30,23 @@ DnDUpload.prototype = {
           
   DropZone: null,
   
-  
-
+  url               : 'upload.php',
    
   dropZoneHeight    : 400,
   
   dropZoneWidth     : 400,
   
-  dropZoneText      : 'Drop here',
-  
   dropZoneStyle     : 'default',
   
-  cancelButton      : 'Cancel',
-
-  maxFileSize       : 500,
+  maxFileSize       : 1048576,
   
   totalFileSize     : 0,
+  totalFileSizeP    : 0,
   
   serverUploadLimit : 4,
   
-  message : {
-    BROWSER_NOT_SUPPORTED : 'the browser doesn\'t support the awesome dran n\' drop method!'
-  },
-         
+  uploadPause       : false,
+  
   sizeType: {
     0: 'byte', 1024: 'kb', 1048576: 'mb', 1073741824: 'gb', 1099511627776: 'tb'
   },
@@ -61,9 +55,20 @@ DnDUpload.prototype = {
   dropZoneTpl: [
     '<form name="frm{ID}" action="#" method="post" enctype="multipart/form-data">',
       '<div id="FileContainer_{ID}" class="FileContainer"></div>',  
-      '<div id="DropText_{ID}" class="DropText">{dropZoneText}</div>',
-      '<div id="TotalUpload_{ID}" class="TotalUpload"></div>',    
-    '</form>'
+      '<div id="DropText_{ID}" class="DropText">{i18n.dropText}</div>',
+    '</form>',
+    
+    '<div id="TotalUpload_{ID}" class="TotalUpload">',
+      '<div class="progress"><div id="TotalUploadProgress_{ID}" style="width:0%">&nbsp;</div></div>',
+      '<div class="meta">',
+        '<div class="percentage">0%</div>',
+        '<span>&nbsp</span>',
+        '<div class="">',
+          '<a href="javascript:void(0);">P</a> ',
+          '<a href="javascript:void(0);">S</a>',
+        '</div>',
+      '</div>',
+    '</div>'
   ],
           
   // File Template
@@ -71,37 +76,45 @@ DnDUpload.prototype = {
     '<div class="preview {fileType}">',
       '<div class="statusIcon pending"></div>',
     '</div>',
-    '<div class="progress"><span style="width:0%"></span></div>',
+    '<div class="progress"><span style="width:0%">&nbsp;</span></div>',
     '<div class="fileMeta">',
       '<div class="fileSize"><strong>{fileSize}</strong> {fileSizeType}</div>',
       '<div class="fileName" title="{fileName}">{fileName}</div>',
     '</div>',
-    '<div class="removeFile"><a href="#">Remove</a></div>',
-    '<button type="button" class="cancel">{cancelButton}</button>',
+    '<div class="removeFile"><a href="#" onclick="return false;">{i18n.remove}</a></div>',
+    '<button type="button" class="cancel">{i18n.cancel}</button>',
   ],
           
-  
           
   init: function(options) {
     this.ID = this.Element.id;
     this._setOptions(options);
     this._buildDropZone();
-    
     if(this._checkBrowser()){
       this._addEventListener();      
-    }
+    }      
   },
           
   
   _addEventListener : function(){
     var _this = this;
     
-    this.DropZone.addEventListener('click',    function(event){DnDUpload.prototype.onClick(event,_this);return false;});
+    var processButtons = document.getElementById("TotalUpload_"+this.ID).getElementsByTagName('a');
+    
+    
+    this.DropZone.addEventListener('click',   function(event){DnDUpload.prototype.onClick(event,_this);return false;});
     
     this.Element.addEventListener('dragover', function(event){DnDUpload.prototype.onDragOver(event,_this);return false;});
     this.Element.addEventListener('dragexit', function(event){DnDUpload.prototype.onDragEnd(event,_this);return false;});
+    this.Element.addEventListener('dragleave',function(event){DnDUpload.prototype.onDragEnd(event,_this);return false;});
     this.Element.addEventListener('dragend',  function(event){DnDUpload.prototype.onDragEnd(event,_this);return false;});
     this.Element.addEventListener('drop',     function(event){DnDUpload.prototype.onDrop(event,_this);return false;});
+    
+    
+    
+    processButtons[0].addEventListener('click', function(event){DnDUpload.prototype._pauseAll(_this);return false;});
+    processButtons[1].addEventListener('click', function(event){DnDUpload.prototype._startUpload(_this);return false;});
+    
   },
           
   onClick : function(event,_this){
@@ -138,9 +151,87 @@ DnDUpload.prototype = {
         _this._addFile(file);  
     });    
     
+    _this.onDragEnd(event,_this);
     return false;
   },          
           
+          
+  _startUpload : function(_this){
+    _this.FileQueue.each(function(index,fileObj,_this){
+      do{
+        console.log('not ready');
+      }while(_this.sendChunks(fileObj)==='DONE')      
+      
+    },_this);
+  },
+            
+    sendChunks : function(fileObj, totalSend){
+      
+      //console.log(fileObj);
+      var _this         = this;
+      var totalSend     = totalSend || 0;
+      var totalFileSize = fileObj.file.size;
+
+      if(this.uploadPause){
+        console.log('upload pause');  
+        window.setTimeout(function(){
+          _this.sendChunks(fileObj,totalSend);
+        }, 1000);    
+        return false;
+      }      
+      
+      var progressBar = fileObj.fileEl.getElementsByTagName('span');
+      var totalBar    = document.getElementById("TotalUploadProgress_"+this.ID);
+      var pre         = document.getElementById("TotalUpload_"+this.ID).getElementsByClassName('percentage')[0];
+
+      
+      fEnd = (totalSend+this.maxFileSize>=totalFileSize) ? totalFileSize : totalSend+this.maxFileSize;
+      
+      var formData = new FormData();
+      formData.append('id', 'test');
+      formData.append('path', '/download/test/');
+      formData.append('fileName', fileObj.file.name);
+      formData.append('fileType', fileObj.file.type);
+      formData.append('file', fileObj.file.slice(totalSend,fEnd));
+
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', this.url);
+      
+      xhr.onload = function(){
+        if(totalSend < totalFileSize){
+          totalSend += _this.maxFileSize;
+          //_this.totalFileSizeP += totalSend;
+          
+          
+//          console.log(_this.totalFileSizeP);
+//          var p = Math.round((_this.totalFileSizeP/_this.totalFileSize)*100);
+//          totalBar.style.width = p+'%';     
+//          pre.innerHTML = p+'%';     
+          
+          _this.sendChunks(fileObj,totalSend);          
+        }else{
+          progressBar[0].style.width = '100%';  
+          return 'DONE';
+        }
+      }
+      
+      xhr.upload.addEventListener("progress", function(e){
+        var s = totalSend+e.loaded;
+        var p = Math.round((s/totalFileSize)*100);
+        progressBar[0].style.width = p+'%';              
+      }, false);     
+
+      
+      xhr.send(formData);        
+    },          
+          
+  _pauseAll : function(_this){
+    _this.uploadPause = (_this.uploadPause) ? false : true;
+  },          
+
+  _canselAll : function(){
+    console.log(this, 'cancel');
+  },          
           
           
   /**
@@ -158,6 +249,7 @@ DnDUpload.prototype = {
     this.Element.appendChild(this.DropZone);
     
     this._createHiddenInput();
+    this._calculateTotal();
     
     return this;
   },
@@ -268,8 +360,17 @@ DnDUpload.prototype = {
           
           
   _calculateTotal : function(){
-    readableTotalSize = this._getReadableFileSize(this.totalFileSize,true);
-    document.getElementById("TotalUpload_"+this.ID).innerHTML = this.FileQueue.length+ " / " + readableTotalSize.size+" "+readableTotalSize.type;
+    var metaContainer       = document.getElementById("TotalUpload_"+this.ID).getElementsByTagName('span')[0];
+    var readableTotalSize   = this._getReadableFileSize(this.totalFileSize,true);
+    
+    metaContainer.innerHTML = [
+      this.FileQueue.length,
+      ' '+this.i18n.files,
+      " / ",
+      readableTotalSize.size,
+      " ",
+      readableTotalSize.type
+    ].join(""); 
     
     
   },
@@ -279,9 +380,19 @@ DnDUpload.prototype = {
     var html = template.join("");
     var tempVars = html.match(/\{.*?\}/g);
     
+    
+    
     tempVars.each(function(key,varName,_this){
       var propName = varName.substring(1,varName.length-1);
-      var value = (varObj && varObj[propName]) ? varObj[propName] : _this[propName];
+      
+      // use i18n value
+      if(propName.indexOf('i18n')>=0){
+        var i18nVar = propName.substring(5);
+        var value = (_this.i18n[i18nVar]) ? _this.i18n[i18nVar] : i18nVar;
+      }else{
+        var value = (varObj && varObj[propName]) ? varObj[propName] : _this[propName];  
+      }
+      
       html = html.replace(varName, value);
     },this);      
     
@@ -300,12 +411,11 @@ DnDUpload.prototype = {
           
           
   _checkBrowser : function(){
-
     if(window.FileReader===undefined){
       var error = document.createElement('div');
       error.className = 'error';
       error.innerHTML = [
-        '<div class="message">Your browser does not support drag\'n\'drop file uploads.</div>',
+        '<div class="message">'+this.i18n.messages.BROWSER_NOT_SUPPORTED+'</div>',
         '<div class="supportedBrowsers">',
           '<div class="ff"><span>FireFox</span></div>',
           '<div class="chrome"><span>Chrome</span></div>',

@@ -11,9 +11,11 @@
   font-family: verdana;
   font-size: 100%;
   cursor:pointer;
-  border:dashed 2px #dddddd;
+  border:solid 1px #dddddd;
   border-radius: 15px;
   -moz-border-radius: 15px;
+  position:relative;
+  overflow: hidden;
 }
 
 .DropZone.default .DropText{
@@ -23,11 +25,6 @@
   color : #dddddd;
   position: relative;
   top:25px;
-}
-
-.DropZone.default .TotalUpload{
-  border:solid 1px;
-  position:relative;
 }
 
 
@@ -44,7 +41,7 @@
 
 .DropZone.default .FileContainer .file{
   display: inline-block;
-  margin:5px 1px 5px 2px;
+  margin:2px 1px;
   padding : 5px;
   border:solid 1px #ACACAC;
   box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.16);
@@ -80,13 +77,42 @@
 
 
 /* Progress Bar */
-.DropZone.default .FileContainer .progress{height : 4px; margin-bottom: 5px;border-top: none; overflow:hidden;}
+.DropZone.default .TotalUpload .progress,
+.DropZone.default .FileContainer .progress{
+  height : 4px; 
+  margin-bottom: 5px;
+  border-top: none; 
+  overflow:hidden;
+}
+
+.DropZone.default .TotalUpload{
+  font-size: 9px;
+  width : 100%;
+  background:#dddddd;
+  position:absolute;
+  box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.7);
+  bottom:0px;
+}
+.DropZone.default .TotalUpload .progress{margin-bottom:0px;}
+.DropZone.default .TotalUpload .meta{padding:0 15px 2px 15px;}
+
+
+.DropZone.default .TotalUpload .percentage{ float:right;}
+
+
+.DropZone.default .TotalUpload .progress span,
 .DropZone.default .FileContainer .progress span{
   background : #00AA00;
-  display: block;
+  display: inline-block;
   height : 100%;
   border-radius :  0 5px 5px 0px;
 }
+.DropZone.default .TotalUpload .progress div{
+  background:#7578FF;
+}
+
+
+
 
 .DropZone.default .FileContainer .file .fileMeta{
   color:#4169E1;
