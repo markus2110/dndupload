@@ -7,11 +7,11 @@
 
 
 
-//print_r($_POST);
-//print_r($_FILES);
+print_r($_POST);
+print_r($_FILES);
+#sleep(1);
+//$uploadDir = dirname(__FILE__)."/testuploads/".$_POST['fileName'];
 
-$uploadDir = dirname(__FILE__)."/testuploads/".$_POST['fileName'];
-
-file_put_contents($uploadDir, file_get_contents($_FILES['file']['tmp_name']), FILE_APPEND);
+//file_put_contents($uploadDir, file_get_contents($_FILES['file']['tmp_name']), FILE_APPEND);
 
 ?>

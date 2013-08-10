@@ -24,26 +24,33 @@ var DnDUpload = function(elID, options) {
  * @type type
  */
 DnDUpload.prototype = {
-  ID      : null,
+  ID                : null,
   
-  Element : null,
+  Element           : null,
           
-  DropZone: null,
+  DropZone          : null,
+  
+  UploadControls    : null,
   
   url               : 'upload.php',
+  
+  totalAsyncUploads : 1,
    
   dropZoneHeight    : 400,
   
-  dropZoneWidth     : 400,
+  dropZoneWidth     : 600,
   
   dropZoneStyle     : 'default',
   
-  maxFileSize       : 1048576,
+  maxFileSize       : 4194304,
   
   totalFileSize     : 0,
+  
   totalFileSizeP    : 0,
   
   serverUploadLimit : 4,
+  
+  uploadInProcess   : 0,
   
   uploadPause       : false,
   
@@ -63,9 +70,10 @@ DnDUpload.prototype = {
       '<div class="meta">',
         '<div class="percentage">0%</div>',
         '<span>&nbsp</span>',
-        '<div class="">',
-          '<a href="javascript:void(0);">P</a> ',
-          '<a href="javascript:void(0);">S</a>',
+        '<div class="uploadControl">',
+        '<a href="javascript:void(0);"    class="stop" title="{i18n.STOP}">&nbsp;</a>',
+          '<a href="javascript:void(0);"  class="pause" title="{i18n.PAUSE}">&nbsp;</a>',
+          '<a href="javascript:void(0);"  class="play" title="{i18n.PLAY}">&nbsp;</a>',
         '</div>',
       '</div>',
     '</div>'
@@ -99,7 +107,7 @@ DnDUpload.prototype = {
   _addEventListener : function(){
     var _this = this;
     
-    var processButtons = document.getElementById("TotalUpload_"+this.ID).getElementsByTagName('a');
+    
     
     
     this.DropZone.addEventListener('click',   function(event){DnDUpload.prototype.onClick(event,_this);return false;});
@@ -110,10 +118,11 @@ DnDUpload.prototype = {
     this.Element.addEventListener('dragend',  function(event){DnDUpload.prototype.onDragEnd(event,_this);return false;});
     this.Element.addEventListener('drop',     function(event){DnDUpload.prototype.onDrop(event,_this);return false;});
     
-    
-    
-    processButtons[0].addEventListener('click', function(event){DnDUpload.prototype._pauseAll(_this);return false;});
-    processButtons[1].addEventListener('click', function(event){DnDUpload.prototype._startUpload(_this);return false;});
+    // Upload control buttons
+    this.UploadControls = document.getElementById("TotalUpload_"+this.ID).getElementsByTagName('a');
+    this.UploadControls[0].addEventListener('click', function(event){DnDUpload.prototype.cancelAll(_this);return false;});
+    this.UploadControls[1].addEventListener('click', function(event){DnDUpload.prototype.pauseAll(_this);return false;});
+    this.UploadControls[2].addEventListener('click', function(event){DnDUpload.prototype.startUpload(_this);return false;});
     
   },
           
@@ -156,14 +165,43 @@ DnDUpload.prototype = {
   },          
           
           
-  _startUpload : function(_this){
-    _this.FileQueue.each(function(index,fileObj,_this){
-      do{
-        console.log('not ready');
-      }while(_this.sendChunks(fileObj)==='DONE')      
-      
-    },_this);
+  startUpload : function(_this){
+    _this.uploadPause=false;
+    
+    if(_this.uploadInProcess===0){
+      _this.FileQueue.each(function(index,fileObj,_this){
+        _this.uploadInProcess++;
+        do{
+          console.log('not ready');
+        }while(_this.sendChunks(fileObj)==='DONE')      
+
+      },_this);      
+    }
+
+    _this.UploadControls[0].className="stop";
+    _this.UploadControls[1].className="pause";
+    _this.UploadControls[2].className="play active";
+    
   },
+          
+  pauseAll : function(_this){
+    if(_this.uploadInProcess>0){
+      _this.uploadPause = true;
+      _this.UploadControls[0].className="stop";
+      _this.UploadControls[1].className="pause active";
+      _this.UploadControls[2].className="play";
+    }
+    
+  },          
+
+  cancelAll : function(_this){
+    console.log('Cancel');
+    _this.uploadInProcess = 0;
+    _this.uploadPause     = false;
+    _this.UploadControls[0].className="stop active";
+    _this.UploadControls[1].className="pause";
+    _this.UploadControls[2].className="play";
+  },            
             
     sendChunks : function(fileObj, totalSend){
       
@@ -172,8 +210,8 @@ DnDUpload.prototype = {
       var totalSend     = totalSend || 0;
       var totalFileSize = fileObj.file.size;
 
+      console.log(this.uploadInProcess);
       if(this.uploadPause){
-        console.log('upload pause');  
         window.setTimeout(function(){
           _this.sendChunks(fileObj,totalSend);
         }, 1000);    
@@ -194,26 +232,58 @@ DnDUpload.prototype = {
       formData.append('fileType', fileObj.file.type);
       formData.append('file', fileObj.file.slice(totalSend,fEnd));
 
+      
+
+      var sTime = new Date().getTime();
+      var eTime = 0;
+      var tSent = fEnd-totalSend;
       var xhr = new XMLHttpRequest();
+      
+      xhr.onreadystatechange = function(){
+        if(this.readyState === this.DONE){
+          eTime = new Date().getTime();
+          var totalTime = eTime-sTime;
+          var x = totalTime / 1000;
+          
+          
+          var d = _this._getReadableFileSize(tSent/x,true)
+          
+          console.log('send', d);
+        }
+      }
+    
+    
       xhr.open('POST', this.url);
       
+
+//      xhr.onloadend= function(){
+//        console.log('on load end');
+//        eTime = 
+//        var totalTime = eTime-sTime;
+//        totalTime = Math.round(totalTime/1000)
+//        console.log(Math.random(totalTime * 100) / 100, 'SEK');
+//      }      
+      
       xhr.onload = function(){
+        
         if(totalSend < totalFileSize){
           totalSend += _this.maxFileSize;
-          //_this.totalFileSizeP += totalSend;
+          _this.totalFileSizeP += _this.maxFileSize;
           
-          
-//          console.log(_this.totalFileSizeP);
-//          var p = Math.round((_this.totalFileSizeP/_this.totalFileSize)*100);
-//          totalBar.style.width = p+'%';     
-//          pre.innerHTML = p+'%';     
+          //console.log(_this.totalFileSizeP);
+          var p = Math.floor((_this.totalFileSizeP/_this.totalFileSize)*100);
+          totalBar.style.width = p+'%';     
+          pre.innerHTML = p+'%';     
           
           _this.sendChunks(fileObj,totalSend);          
         }else{
           progressBar[0].style.width = '100%';  
+          _this.uploadInProcess--;
           return 'DONE';
         }
-      }
+        
+ 
+      };
       
       xhr.upload.addEventListener("progress", function(e){
         var s = totalSend+e.loaded;
@@ -225,13 +295,7 @@ DnDUpload.prototype = {
       xhr.send(formData);        
     },          
           
-  _pauseAll : function(_this){
-    _this.uploadPause = (_this.uploadPause) ? false : true;
-  },          
-
-  _canselAll : function(){
-    console.log(this, 'cancel');
-  },          
+        
           
           
   /**

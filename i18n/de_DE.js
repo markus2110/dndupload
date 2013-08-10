@@ -10,6 +10,9 @@ DnDUpload.prototype.i18n = {
     remove    : 'Löschen',
     cancel    : 'Abbrechen',
     
+    STOP      : 'Upload stoppen',
+    PLAY      : 'Upload starten',
+    PAUSE     : 'Upload anhalten',
     
     
     messages  : {

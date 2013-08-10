@@ -10,12 +10,13 @@
 .DropZone.default{
   font-family: verdana;
   font-size: 100%;
-  cursor:pointer;
+  /*cursor:pointer;*/
   border:solid 1px #dddddd;
   border-radius: 15px;
   -moz-border-radius: 15px;
   position:relative;
-  overflow: hidden;
+  overflow: hidden;;
+  margin:20px auto;
 }
 
 .DropZone.default .DropText{
@@ -132,6 +133,30 @@
 }
 
 
+.DropZone.default .TotalUpload .uploadControl{
+  text-align:right;
+}
+
+.DropZone.default .TotalUpload .uploadControl a{
+  text-decoration:none;
+  display:inline-table;
+  height : 48px;
+  width : 48px;  
+  margin:0px 2px 2px 2px;
+  
+}
+.DropZone.default .TotalUpload .uploadControl a.stop{background : url(icons/media_playback_stop_light.png) center no-repeat;}
+  .DropZone.default .TotalUpload .uploadControl a.stop.active,
+  .DropZone.default .TotalUpload .uploadControl a.stop:hover{background : url(icons/media_playback_stop.png) center no-repeat;}
+  
+
+.DropZone.default .TotalUpload .uploadControl a.pause{background : url(icons/media_playback_pause_light.png) center no-repeat;}
+  .DropZone.default .TotalUpload .uploadControl a.pause.active,
+  .DropZone.default .TotalUpload .uploadControl a.pause:hover{background : url(icons/media_playback_pause.png) center no-repeat;}
+
+.DropZone.default .TotalUpload .uploadControl a.play{background : url(icons/media_playback_start_light.png) center no-repeat;}
+  .DropZone.default .TotalUpload .uploadControl a.play.active,
+  .DropZone.default .TotalUpload .uploadControl a.play:hover{background : url(icons/media_playback_start.png) center no-repeat;}
 
 
 /* ERROR */
