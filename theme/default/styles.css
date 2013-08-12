@@ -48,6 +48,8 @@
   box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.16);
   background: #ffffff;
   width : 21%;
+  position:static;
+
 }
 
 .DropZone.default .FileContainer .file .preview,
@@ -57,6 +59,7 @@
   padding : 2px;
   height : 70px;
   border-bottom: none;
+  overflow: hidden;
 }
 
 .DropZone.default .FileContainer .file .preview.doc{background : url(icons/file_type/text_document.png) no-repeat center #eeeeee;}
@@ -66,14 +69,17 @@
 
 .DropZone.default .FileContainer .file .preview .statusIcon{
   height:32px;
-  width:32px;
+  width :32px;
+  border:solid 1px;
+  margin:20px auto;
   position:relative;
-  margin:25% auto;    
+  top:10px;
 }
-.DropZone.default .FileContainer .file .preview .statusIcon.pending{background : url(icons/pending.png);}
-.DropZone.default .FileContainer .file .preview .statusIcon.uploading{background : url(icons/up.png);}
+.DropZone.default .FileContainer .file .preview .statusIcon.pending{background : url(icons/pending.png) center no-repeat;}
+.DropZone.default .FileContainer .file .preview .statusIcon.uploading{background : url(icons/up.png) center no-repeat;}
 .DropZone.default .FileContainer .file .preview .statusIcon.complete{
-  background : url(icons/check.png); margin:0; top:-12px; left:80%;      
+  background : url(icons/check.png) center no-repeat; 
+  margin:0; top:-12px; left:80%;      
 }
 
 

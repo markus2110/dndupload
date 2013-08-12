@@ -82,7 +82,7 @@ DnDUpload.prototype = {
   // File Template
   fileTemplate: [
     '<div class="preview {fileType}">',
-      '<div class="statusIcon pending"></div>',
+      //'<div class="statusIcon complete"></div>',
     '</div>',
     '<div class="progress"><span style="width:0%">&nbsp;</span></div>',
     '<div class="fileMeta">',
@@ -91,6 +91,7 @@ DnDUpload.prototype = {
     '</div>',
     '<div class="removeFile"><a href="#" onclick="return false;">{i18n.remove}</a></div>',
     '<button type="button" class="cancel">{i18n.cancel}</button>',
+    
   ],
           
           
@@ -239,30 +240,22 @@ DnDUpload.prototype = {
       var tSent = fEnd-totalSend;
       var xhr = new XMLHttpRequest();
       
+      xhr.open('POST', this.url);
+      
+      
       xhr.onreadystatechange = function(){
         if(this.readyState === this.DONE){
           eTime = new Date().getTime();
           var totalTime = eTime-sTime;
           var x = totalTime / 1000;
           
-          
           var d = _this._getReadableFileSize(tSent/x,true)
           
           console.log('send', d);
         }
       }
-    
-    
-      xhr.open('POST', this.url);
-      
 
-//      xhr.onloadend= function(){
-//        console.log('on load end');
-//        eTime = 
-//        var totalTime = eTime-sTime;
-//        totalTime = Math.round(totalTime/1000)
-//        console.log(Math.random(totalTime * 100) / 100, 'SEK');
-//      }      
+//      xhr.onloadend= function(){}      
       
       xhr.onload = function(){
         
@@ -366,9 +359,36 @@ DnDUpload.prototype = {
       fileEl  : file
     });
     
+    if(tempVars.fileType === 'image')
+      this.setPreviewImage(fileObj,file);
+    
     this.totalFileSize += fileObj.size;
     this._calculateTotal();
   },
+  
+  setPreviewImage : function(fileObj,el){
+    if(fileObj)
+    var reader = new FileReader();
+    reader.onload = function(e){
+      if(e.target.result){
+        
+        console.log(el.getElementsByTagName('div'));
+        
+        var previewImg = document.createElement('img');
+        previewImg.src    = e.target.result;
+        previewImg.title  = fileObj.name;
+        previewImg.alt    = fileObj.name;
+        previewImg.style.width  = "100%";
+
+        var preview = el.getElementsByTagName('div')[0];
+        preview.appendChild(previewImg);
+      };
+    }
+    reader.readAsDataURL(fileObj);
+    
+    console.log(fileObj);
+  },
+          
           
   _removeFile : function(file, _this){
     
@@ -414,7 +434,7 @@ DnDUpload.prototype = {
       fileType = 'movie';
     else if(type.indexOf('zip')>=0) 
       fileType = 'zip';
-    else if(type.indexOf('image')>=0) 
+    else if(type.indexOf('image')>=0)
       fileType = 'image';
     else 
       fileType = 'doc';
