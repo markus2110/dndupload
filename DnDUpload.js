@@ -33,6 +33,7 @@ DnDUpload.prototype = {
   UploadControls    : null,
   
   url               : 'upload.php',
+  removeUrl         : 'upload.php?remove=1',
   
   totalAsyncUploads : 1,
    
@@ -42,7 +43,10 @@ DnDUpload.prototype = {
   
   dropZoneStyle     : 'default',
   
-  maxFileSize       : 4194304,
+  allowedFileTypes  : ['jpg','bmp','png','gif'],
+  //allowedFileTypes  : null,
+  
+  maxFileSize       : 1048576, // 1 MB
   
   totalFileSize     : 0,
   
@@ -79,6 +83,7 @@ DnDUpload.prototype = {
     '</div>'
   ],
           
+          
   // File Template
   fileTemplate: [
     '<div class="preview {fileType}">',
@@ -108,9 +113,6 @@ DnDUpload.prototype = {
   _addEventListener : function(){
     var _this = this;
     
-    
-    
-    
     this.DropZone.addEventListener('click',   function(event){DnDUpload.prototype.onClick(event,_this);return false;});
     
     this.Element.addEventListener('dragover', function(event){DnDUpload.prototype.onDragOver(event,_this);return false;});
@@ -124,8 +126,8 @@ DnDUpload.prototype = {
     this.UploadControls[0].addEventListener('click', function(event){DnDUpload.prototype.cancelAll(_this);return false;});
     this.UploadControls[1].addEventListener('click', function(event){DnDUpload.prototype.pauseAll(_this);return false;});
     this.UploadControls[2].addEventListener('click', function(event){DnDUpload.prototype.startUpload(_this);return false;});
-    
   },
+
           
   onClick : function(event,_this){
     // find hidden input field
@@ -135,13 +137,15 @@ DnDUpload.prototype = {
     }
     return false;
   },
-    
+
+          
   onDragOver : function(event,_this){
     event.preventDefault();event.stopPropagation();      
     var DD = _this.Element.getElementsByClassName('DropZone')[0];
     DD.classList.add('enter');
     return false;
   },
+        
           
   onDragEnd : function(event,_this){
     event.preventDefault();event.stopPropagation();      
@@ -149,6 +153,7 @@ DnDUpload.prototype = {
     DD.classList.remove('enter');
     return false;
   },
+          
           
   onDrop  : function(event,_this){
     event.preventDefault();event.stopPropagation();      
@@ -185,6 +190,7 @@ DnDUpload.prototype = {
     
   },
           
+          
   pauseAll : function(_this){
     if(_this.uploadInProcess>0){
       _this.uploadPause = true;
@@ -194,6 +200,7 @@ DnDUpload.prototype = {
     }
     
   },          
+
 
   cancelAll : function(_this){
     console.log('Cancel');
@@ -274,8 +281,6 @@ DnDUpload.prototype = {
           _this.uploadInProcess--;
           return 'DONE';
         }
-        
- 
       };
       
       xhr.upload.addEventListener("progress", function(e){
@@ -335,36 +340,79 @@ DnDUpload.prototype = {
     });
   },
           
+          
   _addFile : function(fileObj){
     var _this = this;
-    var readableFile = this._getReadableFileSize(fileObj.size);
     
-    var tempVars = {
-      fileName      : fileObj.name,
-      fileType      : this._getFileType(fileObj.type),
-      fileSize      : readableFile.size,
-      fileSizeType  : readableFile.type,
+    if(this.checkFile(fileObj)){
+      var readableFile = this._getReadableFileSize(fileObj.size);
+
+      var tempVars = {
+        fileName      : fileObj.name,
+        fileType      : this._getFileType(fileObj.type),
+        fileSize      : readableFile.size,
+        fileSizeType  : readableFile.type,
+      }
+      var file = document.createElement('div');
+      file.className = 'file';
+      file.innerHTML = this._prepareTemplate(this.fileTemplate,tempVars);
+
+      var removeTag = file.getElementsByTagName('a')[0];
+      removeTag.addEventListener('click', function(event){DnDUpload.prototype._removeFile(file,_this)});
+
+      document.getElementById("FileContainer_"+this.ID).appendChild(file);
+
+      this.FileQueue.push({
+        file    : fileObj,
+        fileEl  : file
+      });
+
+      if(tempVars.fileType === 'image')
+        this.setPreviewImage(fileObj,file);
+
+      this.totalFileSize += fileObj.size;
+      this._calculateTotal();      
     }
-    var file = document.createElement('div');
-    file.className = 'file';
-    file.innerHTML = this._prepareTemplate(this.fileTemplate,tempVars);
-    
-    var removeTag = file.getElementsByTagName('a')[0];
-    removeTag.addEventListener('click', function(event){DnDUpload.prototype._removeFile(file,_this)});
-    
-    document.getElementById("FileContainer_"+this.ID).appendChild(file);
-    
-    this.FileQueue.push({
-      file    : fileObj,
-      fileEl  : file
-    });
-    
-    if(tempVars.fileType === 'image')
-      this.setPreviewImage(fileObj,file);
-    
-    this.totalFileSize += fileObj.size;
-    this._calculateTotal();
   },
+          
+  /**
+   * Checks is filetype allowed and is file not already exists in FileQueue
+   * 
+   * @param {object} fileObj
+   * @returns {Boolean}
+   */        
+  checkFile : function(fileObj){
+    var allowed = false;
+
+    // check is file allowed
+    if(this.allowedFileTypes !== null){
+      var filePrefix = fileObj.name.split(".");
+      filePrefix = filePrefix[filePrefix.length-1];
+      for(i in this.allowedFileTypes){
+        if(typeof this.allowedFileTypes[i] === 'string' && filePrefix===this.allowedFileTypes[i]){
+          allowed = true;
+          break;
+        }
+      }
+      if(!allowed){
+        alert(this.i18n.errors.FILE_NOT_ALLOWED);
+        return false;
+      }
+    }
+    
+    // check is file already exists
+    allowed = true;
+    if(this.FileQueue.length > 0){
+      this.forEach(this.FileQueue, function(key,value){
+        if(value.file.name === fileObj.name){
+          alert(DnDUpload.prototype.i18n.errors.FILE_ALREADY_EXISTS);
+          allowed = false;
+        }
+      });      
+    }
+    return allowed;
+  },
+  
   
   setPreviewImage : function(fileObj,el){
     if(fileObj)
@@ -510,6 +558,14 @@ DnDUpload.prototype = {
       return false;
     }
     return true;
+  },
+          
+          
+  forEach : function(obj, callback, scope) {
+    for (_key in obj) {
+      if (typeof obj[_key] !== 'function')
+        callback(_key, obj[_key], scope);
+    }
   },
 
 
