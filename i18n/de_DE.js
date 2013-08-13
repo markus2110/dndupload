@@ -19,8 +19,9 @@ DnDUpload.prototype.i18n = {
     },
             
     errors : {
-      FILE_NOT_ALLOWED    : 'Dieser Dateityp ist leider nicht erlaubt!',
-      FILE_ALREADY_EXISTS : 'Datei bereits vorhanden!'
+      FILE_NOT_ALLOWED    : 'Dateityp \'{FileType}\' ist leider nicht erlaubt!',
+      FILE_ALREADY_EXISTS : 'Datei \'{FileName}\' bereits vorhanden!',
+      FILE_TOO_BIG        : 'Datei \'{FileName}\' ist zu groß, es sind nur max. {AllowedFileSize} erlaubt!'
     }
     
     

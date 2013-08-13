@@ -19,16 +19,23 @@ var _DnD = {
 };
 
 
-
+/**
+ * 
+ * @param string elID
+ * @param object options
+ * @returns DnDUpload.prototype
+ */
 var DnDUpload = function(elID, options) {
   this.Element    = document.getElementById(elID);
   this.FileQueue  = [];
   this.init(options);
+  return this;
 };
+
 
 /**
  * 
- * @type type
+ * @type object
  */
 DnDUpload.prototype = {
   ID                : null,
@@ -40,6 +47,7 @@ DnDUpload.prototype = {
   UploadControls    : null,
   
   url               : 'upload.php',
+  
   removeUrl         : 'upload.php?remove=1',
   
   totalAsyncUploads : 1,
@@ -52,8 +60,22 @@ DnDUpload.prototype = {
   
   allowedFileTypes  : ['jpg','bmp','png','gif'],
   //allowedFileTypes  : null,
+
   
-  maxFileSize       : 1048576, // 1 MB
+  /**
+   * (string) 1MB or (number) 1048576
+   * number value should be in byte
+   * @type mixed 
+   */  
+  maxAllowedFileSize  : '250MB',
+  
+  
+  /**
+   * (string) 1MB or (number) 1048576
+   * number value should be in byte
+   * @type mixed 
+   */
+  maxServerUploadSize : 1048576,
   
   totalFileSize     : 0,
   
@@ -110,7 +132,6 @@ DnDUpload.prototype = {
   init: function(options) {
     this.ID = this.Element.id;
     this._setOptions(options);
-
     this._buildDropZone();
     if(this._checkBrowser()){
       this._addEventListener();      
@@ -238,7 +259,7 @@ DnDUpload.prototype = {
       var pre         = document.getElementById("TotalUpload_"+this.ID).getElementsByClassName('percentage')[0];
 
       
-      fEnd = (totalSend+this.maxFileSize>=totalFileSize) ? totalFileSize : totalSend+this.maxFileSize;
+      fEnd = (totalSend+this.maxServerUploadSize>=totalFileSize) ? totalFileSize : totalSend+this.maxServerUploadSize;
       
       var formData = new FormData();
       formData.append('id', 'test');
@@ -274,8 +295,8 @@ DnDUpload.prototype = {
       xhr.onload = function(){
         
         if(totalSend < totalFileSize){
-          totalSend += _this.maxFileSize;
-          _this.totalFileSizeP += _this.maxFileSize;
+          totalSend += _this.maxServerUploadSize;
+          _this.totalFileSizeP += _this.maxServerUploadSize;
           
           //console.log(_this.totalFileSizeP);
           var p = Math.floor((_this.totalFileSizeP/_this.totalFileSize)*100);
@@ -402,21 +423,34 @@ DnDUpload.prototype = {
         }
       }
       if(!allowed){
-        alert(this.i18n.errors.FILE_NOT_ALLOWED);
+        alert(this._prepareString(this.i18n.errors.FILE_NOT_ALLOWED,{FileType:filePrefix}));
         return false;
       }
     }
-    
+
     // check is file already exists
-    allowed = true;
+    var fileNameUploaded = fileObj.name;
     if(this.FileQueue.length > 0){
-      _DnD.forEach(this.FileQueue, function(value){
-        if(value.file.name === fileObj.name){
-          alert(DnDUpload.prototype.i18n.errors.FILE_ALREADY_EXISTS);
-          allowed = false;
+      for(file in this.FileQueue){
+        var fileName  = this.FileQueue[file].file.name;
+        if(fileNameUploaded === fileName){
+          alert(this._prepareString(this.i18n.errors.FILE_ALREADY_EXISTS,{FileName:fileObj.name}));
+          return false;
         }
-      });      
+      }      
+      allowed = true;
     }
+    
+    // check is file size
+    if(fileObj.size>this.maxAllowedFileSize){
+      var readable = this._getReadableFileSize(this.maxAllowedFileSize);
+      var maxAllowed = readable.size + " "+readable.type;
+      alert(this._prepareString(this.i18n.errors.FILE_TOO_BIG,{FileName:fileObj.name, AllowedFileSize:maxAllowed}));
+      return false;
+    }else{
+      allowed = true;
+    }
+
     return allowed;
   },
   
@@ -536,6 +570,26 @@ DnDUpload.prototype = {
     
     return html;
   },
+          
+  _prepareString : function(_string, varObj){
+    var tempVars = _string.match(/\{.*?\}/g);
+
+    
+    if(!varObj){
+      return _string;
+    }
+    
+    _DnD.forEach(tempVars,function(varName){
+      var propName  = varName.substring(1,varName.length-1);
+      var replace   = (varObj && varObj[propName]) ? varObj[propName] : propName;  
+      _string = _string.replace(varName, replace);
+    });
+    
+    return _string;
+    
+  },
+          
+          
   
   _setOptions : function(options){
     if(options){
@@ -544,6 +598,16 @@ DnDUpload.prototype = {
           _this[key] = value;
       },this);      
     }
+    
+    // calculate maxAllowedFileSize & maxServerUploadSize
+    if(typeof this.maxAllowedFileSize === 'string'){
+      var intVal = parseInt(this.maxAllowedFileSize);
+      this.maxAllowedFileSize = intVal*1048576;
+    };
+    if(typeof this.maxServerUploadSize === 'string'){
+      var intVal = parseInt(this.maxServerUploadSize);
+      this.maxServerUploadSize = intVal*1048576;
+    };
   },
           
           
