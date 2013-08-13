@@ -4,10 +4,17 @@
  * 
  * http://helephant.com/2009/08/17/javascript-prototype-chaining/
  */
-Object.prototype.each = function(callback, scope) {
-  for (_key in this) {
-    if (typeof this[_key] !== 'function')
-      callback(_key, this[_key], scope);
+
+/**
+ * DnDUpload Helper Class
+ * @type Object
+ */
+var _DnD = {
+  forEach : function(obj, callback, scope) {
+    for (_key in obj) {
+      if (typeof obj[_key] !== 'function')
+      callback(obj[_key],_key,scope);
+    }
   }
 };
 
@@ -103,6 +110,7 @@ DnDUpload.prototype = {
   init: function(options) {
     this.ID = this.Element.id;
     this._setOptions(options);
+
     this._buildDropZone();
     if(this._checkBrowser()){
       this._addEventListener();      
@@ -161,10 +169,10 @@ DnDUpload.prototype = {
     var DD = _this.Element.getElementsByClassName('DropZone')[0];
     
     var files = event.dataTransfer.files;
-    files.each(function(index,file){
+    _DnD.forEach(files, function(file){
       if(typeof file === 'object')
         _this._addFile(file);  
-    });    
+    });
     
     _this.onDragEnd(event,_this);
     return false;
@@ -175,14 +183,13 @@ DnDUpload.prototype = {
     _this.uploadPause=false;
     
     if(_this.uploadInProcess===0){
-      _this.FileQueue.each(function(index,fileObj,_this){
+      _DnD.forEach(_this.FileQueue, function(fileObj,index,_this){
         _this.uploadInProcess++;
         do{
           console.log('not ready');
         }while(_this.sendChunks(fileObj)==='DONE')      
-
-      },_this);      
-    }
+      },_this);
+    };
 
     _this.UploadControls[0].className="stop";
     _this.UploadControls[1].className="pause";
@@ -333,7 +340,7 @@ DnDUpload.prototype = {
     // on file select
     var _this = this;
     return hiddenFileInput.addEventListener('change', function(event){
-      this.files.each(function(index,file){
+      _DnD.forEach(this.files,function(file){
         if(typeof file === 'object')
           _this._addFile(file);  
       });
@@ -403,7 +410,7 @@ DnDUpload.prototype = {
     // check is file already exists
     allowed = true;
     if(this.FileQueue.length > 0){
-      this.forEach(this.FileQueue, function(key,value){
+      _DnD.forEach(this.FileQueue, function(value){
         if(value.file.name === fileObj.name){
           alert(DnDUpload.prototype.i18n.errors.FILE_ALREADY_EXISTS);
           allowed = false;
@@ -444,14 +451,14 @@ DnDUpload.prototype = {
     
     
     var newQueue = [];
-    _this.FileQueue.each(function(index,fileObj,t){
+    _DnD.forEach(_this.FileQueue,function(fileObj,index,_that){
       if(fileObj.fileEl !== file){
         newQueue.push(fileObj);
       }
       
       // reduce total file size
       else{
-        t.totalFileSize -= fileObj.file.size;
+        _that.totalFileSize -= fileObj.file.size;
       }
     },_this);
     _this.FileQueue = newQueue;
@@ -512,9 +519,7 @@ DnDUpload.prototype = {
     var html = template.join("");
     var tempVars = html.match(/\{.*?\}/g);
     
-    
-    
-    tempVars.each(function(key,varName,_this){
+    _DnD.forEach(tempVars,function(varName,index,_this){
       var propName = varName.substring(1,varName.length-1);
       
       // use i18n value
@@ -534,7 +539,7 @@ DnDUpload.prototype = {
   
   _setOptions : function(options){
     if(options){
-      options.each(function(key,value,_this){
+      _DnD.forEach(options,function(value,key,_this){
         if(_this[key])
           _this[key] = value;
       },this);      
@@ -558,14 +563,6 @@ DnDUpload.prototype = {
       return false;
     }
     return true;
-  },
-          
-          
-  forEach : function(obj, callback, scope) {
-    for (_key in obj) {
-      if (typeof obj[_key] !== 'function')
-        callback(_key, obj[_key], scope);
-    }
   },
 
 
