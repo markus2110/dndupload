@@ -38,105 +38,196 @@ var DnDUpload = function(elID, options) {
  * @type object
  */
 DnDUpload.prototype = {
-  ID                : null,
   
+  /**
+   * Selected Element Id
+   * @type String
+   */
+  ID                : false,
+  
+  
+  /**
+   * Selected HTML Element
+   * @type Object
+   */
   Element           : null,
           
+
+  /**
+   * 
+   * @type type
+   */
   DropZone          : null,
   
+  
+  /**
+   * 
+   * @type type
+   */
   UploadControls    : null,
   
-  url               : 'upload.php',
-  
-  removeUrl         : 'upload.php?remove=1',
-  
-  totalAsyncUploads : 1,
-   
-  dropZoneHeight    : 400,
-  
-  dropZoneWidth     : 600,
-  
-  dropZoneStyle     : 'default',
-  
-  allowedFileTypes  : ['jpg','bmp','png','gif'],
-  //allowedFileTypes  : null,
-
   
   /**
-   * (string) 1MB or (number) 1048576
-   * number value should be in byte
-   * @type mixed 
-   */  
-  maxAllowedFileSize  : '250MB',
-  
-  
-  /**
-   * (string) 1MB or (number) 1048576
-   * number value should be in byte
-   * @type mixed 
+   * total file size to upload
+   * @type Number
    */
-  maxServerUploadSize : 1048576,
-  
   totalFileSize     : 0,
   
+  
+  /**
+   * number of bytes uploaded
+   * @type Number
+   */
   totalFileSizeP    : 0,
   
-  serverUploadLimit : 4,
   
+  /**
+   * number of async uploads in progress
+   * @type Number
+   */
   uploadInProcess   : 0,
   
+  
+  /**
+   * upload pause
+   * @type Boolean
+   */
   uploadPause       : false,
   
+  /**
+   * Size types and number of bytes
+   * @type Object
+   */
   sizeType: {
+    'byte'  : 0,
+    'kb'    : 1024,
+    'mb'    : 1048576,
+    'gb'    : 1073741824,
+    'tb'    : 1099511627776,
+    
     0: 'byte', 1024: 'kb', 1048576: 'mb', 1073741824: 'gb', 1099511627776: 'tb'
+  },  
+  
+  
+  
+  
+  properties :{
+    
+    /**
+     * 
+     * @type Array
+     */
+    allowedFileTypes : ['jpg','bmp','png','gif'],
+            
+            
+    /**
+     * (string) 1MB or (number) 1048576
+     * number value should be in byte
+     * @type mixed 
+     */  
+    maxAllowedFileSize : '250MB',      
+            
+            
+    /**
+     * (string) 1MB or (number) 1048576
+     * number value should be in byte
+     * @type mixed 
+     */
+    maxServerUploadSize : '512kb',
+            
+    /**
+     * 
+     * @type String
+     */
+    url : 'upload.php',
+    
+    
+    /**
+     * 
+     * @type String
+     */
+    removeUrl : 'upload.php?remove=1',
+    
+    
+    /**
+     * 
+     * @type Number
+     */
+    totalAsyncUploads : 1,
+
+
+    /**
+     * 
+     * @type String
+     */
+    layout  : 'default',
+
+            
+
+    /**
+     * 
+     * @type Number
+     */
+    height  : 400,
+            
+    /**
+     * 
+     * @type Number
+     */
+    width   : 600        
+
   },
   
-  // DropZone Template
-  dropZoneTpl: [
-    '<form name="frm{ID}" action="#" method="post" enctype="multipart/form-data">',
-      '<div id="FileContainer_{ID}" class="FileContainer"></div>',  
-      '<div id="DropText_{ID}" class="DropText">{i18n.dropText}</div>',
-    '</form>',
-    
-    '<div id="TotalUpload_{ID}" class="TotalUpload">',
-      '<div class="progress"><div id="TotalUploadProgress_{ID}" style="width:0%">&nbsp;</div></div>',
-      '<div class="meta">',
-        '<div class="percentage">0%</div>',
-        '<span>&nbsp</span>',
-        '<div class="uploadControl">',
-        '<a href="javascript:void(0);"    class="stop" title="{i18n.STOP}">&nbsp;</a>',
-          '<a href="javascript:void(0);"  class="pause" title="{i18n.PAUSE}">&nbsp;</a>',
-          '<a href="javascript:void(0);"  class="play" title="{i18n.PLAY}">&nbsp;</a>',
+  templates : {
+    /**
+     * DropZone Container Template
+     * @type Array
+     */
+    dropZoneTpl: [
+      '<form name="frm{ID}" action="#" method="post" enctype="multipart/form-data">',
+        '<div id="FileContainer_{ID}" class="FileContainer"></div>',  
+        '<div id="DropText_{ID}" class="DropText">{i18n.dropText}</div>',
+      '</form>',
+
+      '<div id="TotalUpload_{ID}" class="TotalUpload">',
+        '<div class="progress"><div id="TotalUploadProgress_{ID}" style="width:0%">&nbsp;</div></div>',
+        '<div class="meta">',
+          '<div class="percentage">0%</div>',
+          '<span>&nbsp</span>',
+          '<div class="uploadControl">',
+          '<a href="javascript:void(0);"    class="stop" title="{i18n.STOP}">&nbsp;</a>',
+            '<a href="javascript:void(0);"  class="pause" title="{i18n.PAUSE}">&nbsp;</a>',
+            '<a href="javascript:void(0);"  class="play" title="{i18n.PLAY}">&nbsp;</a>',
+          '</div>',
         '</div>',
+      '</div>'
+    ],    
+            
+
+    /**
+     * File Template
+     * @type Array
+     */
+    fileTemplate: [
+      '<div class="preview {fileType}">',
+        //'<div class="statusIcon complete"></div>',
       '</div>',
-    '</div>'
-  ],
-          
-          
-  // File Template
-  fileTemplate: [
-    '<div class="preview {fileType}">',
-      //'<div class="statusIcon complete"></div>',
-    '</div>',
-    '<div class="progress"><span style="width:0%">&nbsp;</span></div>',
-    '<div class="fileMeta">',
-      '<div class="fileSize"><strong>{fileSize}</strong> {fileSizeType}</div>',
-      '<div class="fileName" title="{fileName}">{fileName}</div>',
-    '</div>',
-    '<div class="removeFile"><a href="#" onclick="return false;">{i18n.remove}</a></div>',
-    '<button type="button" class="cancel">{i18n.cancel}</button>',
-    
-  ],
-          
-          
-  init: function(options) {
-    this.ID = this.Element.id;
-    this._setOptions(options);
-    this._buildDropZone();
-    if(this._checkBrowser()){
-      this._addEventListener();      
-    }      
+      '<div class="progress"><span style="width:0%">&nbsp;</span></div>',
+      '<div class="fileMeta">',
+        '<div class="fileSize"><strong>{fileSize}</strong> {fileSizeType}</div>',
+        '<div class="fileName" title="{fileName}">{fileName}</div>',
+      '</div>',
+      '<div class="removeFile"><a href="#" onclick="return false;">{i18n.remove}</a></div>',
+      '<button type="button" class="cancel">{i18n.cancel}</button>',
+
+    ]
   },
+  
+
+          
+          
+          
+
           
   
   _addEventListener : function(){
@@ -320,53 +411,9 @@ DnDUpload.prototype = {
       
       xhr.send(formData);        
     },          
-          
-        
-          
-          
-  /**
-   * 
-   * @returns {DnDUpload.prototype}
-   */
-  _buildDropZone: function() {
-    this.DropZone = document.createElement('div');
-    this.DropZone.className = 'DropZone ' + this.dropZoneStyle;
-
-    this.DropZone.innerHTML = this._prepareTemplate(this.dropZoneTpl);
-    this.DropZone.style.width   = this.dropZoneWidth+'px';
-    this.DropZone.style.height  = this.dropZoneHeight+'px';
-    
-    this.Element.appendChild(this.DropZone);
-    
-    this._createHiddenInput();
-    this._calculateTotal();
-    
-    return this;
-  },
-          
-          
-  _createHiddenInput : function(){
-    var hiddenFileInput = document.createElement('input');
-    hiddenFileInput.type              = 'file';
-    hiddenFileInput.name              = 'hiddenFileInput';
-    hiddenFileInput.className         = 'hiddenFileInput';
-    //hiddenFileInput.style.visibility  = 'hidden';
-    hiddenFileInput.style.position    = 'absolute';
-    hiddenFileInput.style.top         = "-1000px";
-    hiddenFileInput.style.left        = "-1000px";
-    
-    //hiddenFileInput.setAttribute("multiple", "multiple");
-    this.Element.appendChild(hiddenFileInput);
-    
-    // on file select
-    var _this = this;
-    return hiddenFileInput.addEventListener('change', function(event){
-      _DnD.forEach(this.files,function(file){
-        if(typeof file === 'object')
-          _this._addFile(file);  
-      });
-    });
-  },
+   
+ 
+       
           
           
   _addFile : function(fileObj){
@@ -504,19 +551,7 @@ DnDUpload.prototype = {
   },
           
           
-  _getReadableFileSize : function(size, precision){
-    var obj = {size: size,type : 'byte'};
-    if(size<1024) return obj;
-    for(maxSize in this.sizeType){
-      if(size<=maxSize)
-        break;
 
-      s = size/maxSize;
-      obj.size = (precision) ? Math.round(s * 100) / 100 : Math.round(s);
-      obj.type = this.sizeType[maxSize];
-    };    
-    return obj;
-  },
           
   _getFileType : function(type){
     if(type.indexOf('video')>=0) 
@@ -532,44 +567,7 @@ DnDUpload.prototype = {
   },          
           
           
-  _calculateTotal : function(){
-    var metaContainer       = document.getElementById("TotalUpload_"+this.ID).getElementsByTagName('span')[0];
-    var readableTotalSize   = this._getReadableFileSize(this.totalFileSize,true);
-    
-    metaContainer.innerHTML = [
-      this.FileQueue.length,
-      ' '+this.i18n.files,
-      " / ",
-      readableTotalSize.size,
-      " ",
-      readableTotalSize.type
-    ].join(""); 
-    
-    
-  },
   
-  
-  _prepareTemplate : function(template, varObj){
-    var html = template.join("");
-    var tempVars = html.match(/\{.*?\}/g);
-    
-    _DnD.forEach(tempVars,function(varName,index,_this){
-      var propName = varName.substring(1,varName.length-1);
-      
-      // use i18n value
-      if(propName.indexOf('i18n')>=0){
-        var i18nVar = propName.substring(5);
-        var value = (_this.i18n[i18nVar]) ? _this.i18n[i18nVar] : i18nVar;
-      }else{
-        var value = (varObj && varObj[propName]) ? varObj[propName] : _this[propName];  
-      }
-      
-      html = html.replace(varName, value);
-    },this);      
-    
-    
-    return html;
-  },
           
   _prepareString : function(_string, varObj){
     var tempVars = _string.match(/\{.*?\}/g);
@@ -591,24 +589,7 @@ DnDUpload.prototype = {
           
           
   
-  _setOptions : function(options){
-    if(options){
-      _DnD.forEach(options,function(value,key,_this){
-        if(_this[key])
-          _this[key] = value;
-      },this);      
-    }
-    
-    // calculate maxAllowedFileSize & maxServerUploadSize
-    if(typeof this.maxAllowedFileSize === 'string'){
-      var intVal = parseInt(this.maxAllowedFileSize);
-      this.maxAllowedFileSize = intVal*1048576;
-    };
-    if(typeof this.maxServerUploadSize === 'string'){
-      var intVal = parseInt(this.maxServerUploadSize);
-      this.maxServerUploadSize = intVal*1048576;
-    };
-  },
+
           
           
   _checkBrowser : function(){
@@ -630,6 +611,205 @@ DnDUpload.prototype = {
   },
 
 
+  // NEW
+  
+  /**
+   * 
+   * @param Object options
+   * @returns void
+   */
+  init: function(options) {
+    this.ID = this.Element.id;
+    
+    this.setOptions(options).buildDropZone();
+    
+//    if(this._checkBrowser()){
+//      this._addEventListener();      
+//    }      
+  },  
+  
+  
+  /**
+   * 
+   * @param Object options
+   * @returns {DnDUpload.prototype}
+   */
+  setOptions : function(options){
+    if(options){
+      _DnD.forEach(options,function(value,key,_this){
+        _this.setProperty(key,value);
+      },this);      
+    }
+    
+    /**
+     * set max allowd file size
+     */
+    if(typeof this.properties.maxAllowedFileSize === 'string'){
+      var intVal    = parseInt(this.properties.maxAllowedFileSize);
+      var sizeType  = this.properties.maxAllowedFileSize.replace(intVal, "");
+      this.properties.maxAllowedFileSize = intVal*this.sizeType[sizeType.toLowerCase()];
+    };
+
+    /**
+     * set max allowd server upload size
+     */
+    if(typeof this.properties.maxServerUploadSize === 'string'){
+      var intVal    = parseInt(this.properties.maxServerUploadSize);
+      var sizeType  = this.properties.maxServerUploadSize.replace(intVal, "");
+      this.properties.maxServerUploadSize = intVal*this.sizeType[sizeType.toLowerCase()];
+    }; 
+    
+    return this;
+  },  
+  
+          
+  /**
+   * Creates the DropZone HTML
+   * @returns {DnDUpload.prototype}
+   */
+  buildDropZone: function() {
+    var width   = this.getProperty('width');
+    var height  = this.getProperty('height');
+    
+    this.DropZone = document.createElement('div');
+    this.DropZone.className = 'DropZone ' + this.getProperty('layout');
+
+    this.DropZone.innerHTML = this.prepareTemplate(this.templates.dropZoneTpl);
+    
+    this.DropZone.style.width   = (typeof width === 'string')   ? width   : width+'px';
+    this.DropZone.style.height  = (typeof height === 'string')  ? height  : height+'px';
+    this.Element.appendChild(this.DropZone);
+    
+    this.createHiddenInput();
+    this.calculateTotal();
+    
+    return this;
+  },          
+
+
+  /**
+   * 
+   * @param Array template
+   * @param Object varObj
+   * @returns String
+   */
+  prepareTemplate : function(template, varObj){
+    var html = template.join("");
+    var tempVars = html.match(/\{.*?\}/g);
+    
+    _DnD.forEach(tempVars,function(varName,index,_this){
+      var propName = varName.substring(1,varName.length-1);
+      
+      // use i18n value
+      if(propName.indexOf('i18n')>=0){
+        var i18nVar = propName.substring(5);
+        var value = (_this.i18n[i18nVar]) ? _this.i18n[i18nVar] : i18nVar;
+      }else{
+        var value = (varObj && varObj[propName]) ? varObj[propName] : _this[propName];  
+      }
+      
+      html = html.replace(varName, value);
+    },this);      
+    
+    
+    return html;
+  },
+          
+   
+
+  /**
+   * Creates a hidden file input.
+   * On DropZone click the default select file window will be shown
+   * @returns void
+   */
+  createHiddenInput : function(){
+    var hiddenFileInput = document.createElement('input');
+    hiddenFileInput.type              = 'file';
+    hiddenFileInput.name              = 'hiddenFileInput';
+    hiddenFileInput.className         = 'hiddenFileInput';
+    //hiddenFileInput.style.visibility  = 'hidden';
+    hiddenFileInput.style.position    = 'absolute';
+    hiddenFileInput.style.top         = "-1000px";
+    hiddenFileInput.style.left        = "-1000px";
+    
+    //hiddenFileInput.setAttribute("multiple", "multiple");
+    this.Element.appendChild(hiddenFileInput);
+    
+    // on file select
+    var _this = this;
+    return hiddenFileInput.addEventListener('change', function(event){
+      _DnD.forEach(this.files,function(file){
+        if(typeof file === 'object')
+          _this._addFile(file);  
+      });
+    });
+  },     
+  
+  /**
+   * 
+   * @returns void
+   */
+  calculateTotal : function(){
+    var metaContainer       = document.getElementById("TotalUpload_"+this.ID).getElementsByTagName('span')[0];
+    var readableTotalSize   = this.getReadableFileSize(this.totalFileSize,true);
+    
+    metaContainer.innerHTML = [
+      this.FileQueue.length,
+      ' '+this.i18n.files,
+      " / ",
+      readableTotalSize.size,
+      " ",
+      readableTotalSize.type
+    ].join(""); 
+  },
+  
+  
+  /**
+   * returns a human readable file size object
+   * 
+   * @param Number size
+   * @param bool precision
+   * @returns Object
+   */
+  getReadableFileSize : function(size, precision){
+    var obj = {size: size, type : 'byte'};
+    if(size<1024) return obj;
+    for(maxSize in this.sizeType){
+      if(size<=maxSize)
+        break;
+
+      s = size/maxSize;
+      obj.size = (precision) ? Math.round(s * 100) / 100 : Math.round(s);
+      obj.type = this.sizeType[maxSize];
+    };    
+    return obj;
+  },  
+
+
+  /**
+   * returns the property value
+   * @param String name
+   * @returns mixed
+   */
+  getProperty : function(name){
+    if(this.properties[name])
+      return this.properties[name];
+    else
+      return false;
+  },
+
+
+  /**
+   * set the value of a given property, if exist
+   * @param String name
+   * @param mixed value
+   * @returns void
+   */
+  setProperty : function(name,value){
+    if(this.properties[name])
+      this.properties[name] = value;
+  },          
+  
   EOF: 'END OF OBJ'
 };
 
