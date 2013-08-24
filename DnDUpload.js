@@ -119,14 +119,12 @@ DnDUpload.prototype = {
      */
     allowedFileTypes : ['jpg','bmp','png','gif'],
             
-            
     /**
      * (string) 1MB or (number) 1048576
      * number value should be in byte
      * @type mixed 
      */  
     maxAllowedFileSize : '250MB',      
-            
             
     /**
      * (string) 1MB or (number) 1048576
@@ -141,13 +139,11 @@ DnDUpload.prototype = {
      */
     url : 'upload.php',
     
-    
     /**
      * 
      * @type String
      */
     removeUrl : 'upload.php?remove=1',
-    
     
     /**
      * 
@@ -155,14 +151,11 @@ DnDUpload.prototype = {
      */
     totalAsyncUploads : 1,
 
-
     /**
      * 
      * @type String
      */
     layout  : 'default',
-
-            
 
     /**
      * 
@@ -186,7 +179,7 @@ DnDUpload.prototype = {
     dropZoneTpl: [
       '<form name="frm{ID}" action="#" method="post" enctype="multipart/form-data">',
         '<div id="FileContainer_{ID}" class="FileContainer"></div>',  
-        '<div id="DropText_{ID}" class="DropText">{i18n.dropText}</div>',
+        '<div id="DropText_{ID}" class="DropText">{i18n.DROP_TEXT}</div>',
       '</form>',
 
       '<div id="TotalUpload_{ID}" class="TotalUpload">',
@@ -203,7 +196,6 @@ DnDUpload.prototype = {
       '</div>'
     ],    
             
-
     /**
      * File Template
      * @type Array
@@ -217,8 +209,8 @@ DnDUpload.prototype = {
         '<div class="fileSize"><strong>{fileSize}</strong> {fileSizeType}</div>',
         '<div class="fileName" title="{fileName}">{fileName}</div>',
       '</div>',
-      '<div class="removeFile"><a href="#" onclick="return false;">{i18n.remove}</a></div>',
-      '<button type="button" class="cancel">{i18n.cancel}</button>',
+      '<div class="removeFile"><a href="#" onclick="return false;">{i18n.REMOVE}</a></div>',
+      '<button type="button" class="cancel">{i18n.CANCEL}</button>',
 
     ]
   },
@@ -283,7 +275,7 @@ DnDUpload.prototype = {
     var files = event.dataTransfer.files;
     _DnD.forEach(files, function(file){
       if(typeof file === 'object')
-        _this._addFile(file);  
+        _this.addFile(file);  
     });
     
     _this.onDragEnd(event,_this);
@@ -416,7 +408,7 @@ DnDUpload.prototype = {
        
           
           
-  _addFile : function(fileObj){
+  addFile : function(fileObj){
     var _this = this;
     
     if(this.checkFile(fileObj)){
@@ -470,7 +462,7 @@ DnDUpload.prototype = {
         }
       }
       if(!allowed){
-        alert(this._prepareString(this.i18n.errors.FILE_NOT_ALLOWED,{FileType:filePrefix}));
+        alert(this._prepareString(this.translate('FILE_NOT_ALLOWED'),{FileType:filePrefix}));
         return false;
       }
     }
@@ -481,7 +473,7 @@ DnDUpload.prototype = {
       for(file in this.FileQueue){
         var fileName  = this.FileQueue[file].file.name;
         if(fileNameUploaded === fileName){
-          alert(this._prepareString(this.i18n.errors.FILE_ALREADY_EXISTS,{FileName:fileObj.name}));
+          alert(this._prepareString(this.translate('FILE_ALREADY_EXISTS'),{FileName:fileObj.name}));
           return false;
         }
       }      
@@ -492,7 +484,7 @@ DnDUpload.prototype = {
     if(fileObj.size>this.maxAllowedFileSize){
       var readable = this._getReadableFileSize(this.maxAllowedFileSize);
       var maxAllowed = readable.size + " "+readable.type;
-      alert(this._prepareString(this.i18n.errors.FILE_TOO_BIG,{FileName:fileObj.name, AllowedFileSize:maxAllowed}));
+      alert(this._prepareString(this.translate('FILE_TOO_BIG'),{FileName:fileObj.name, AllowedFileSize:maxAllowed}));
       return false;
     }else{
       allowed = true;
@@ -592,23 +584,7 @@ DnDUpload.prototype = {
 
           
           
-  _checkBrowser : function(){
-    if(window.FileReader===undefined){
-      var error = document.createElement('div');
-      error.className = 'error';
-      error.innerHTML = [
-        '<div class="message">'+this.i18n.messages.BROWSER_NOT_SUPPORTED+'</div>',
-        '<div class="supportedBrowsers">',
-          '<div class="ff"><span>FireFox</span></div>',
-          '<div class="chrome"><span>Chrome</span></div>',
-          '<div class="ie10"><span>IE 10</span></div>',
-        '</div>'
-      ].join("");
-      this.Element.firstChild.appendChild(error);
-      return false;
-    }
-    return true;
-  },
+
 
 
   // NEW
@@ -623,9 +599,9 @@ DnDUpload.prototype = {
     
     this.setOptions(options).buildDropZone();
     
-//    if(this._checkBrowser()){
+    if(this.checkBrowser()){
 //      this._addEventListener();      
-//    }      
+    }      
   },  
   
   
@@ -703,7 +679,7 @@ DnDUpload.prototype = {
       // use i18n value
       if(propName.indexOf('i18n')>=0){
         var i18nVar = propName.substring(5);
-        var value = (_this.i18n[i18nVar]) ? _this.i18n[i18nVar] : i18nVar;
+        var value = (_this.translate(i18nVar)) ?_this.translate(i18nVar) : i18nVar;
       }else{
         var value = (varObj && varObj[propName]) ? varObj[propName] : _this[propName];  
       }
@@ -714,8 +690,29 @@ DnDUpload.prototype = {
     
     return html;
   },
-          
-   
+  
+  /**
+   * Check nrowser support for FileReader
+   * displays error message on false
+   * @returns {Boolean}
+   */        
+  checkBrowser : function(){
+    if(window.FileReader===undefined){
+      var error = document.createElement('div');
+      error.className = 'error';
+      error.innerHTML = [
+        '<div class="message">'+this.translate('BROWSER_NOT_SUPPORTED')+'</div>',
+        '<div class="supportedBrowsers">',
+          '<div class="ff"><span>FireFox</span></div>',
+          '<div class="chrome"><span>Chrome</span></div>',
+          '<div class="ie10"><span>IE 10</span></div>',
+        '</div>'
+      ].join("");
+      this.Element.firstChild.appendChild(error);
+      return false;
+    }
+    return true;
+  },   
 
   /**
    * Creates a hidden file input.
@@ -740,7 +737,7 @@ DnDUpload.prototype = {
     return hiddenFileInput.addEventListener('change', function(event){
       _DnD.forEach(this.files,function(file){
         if(typeof file === 'object')
-          _this._addFile(file);  
+          _this.addFile(file);  
       });
     });
   },     
@@ -755,7 +752,7 @@ DnDUpload.prototype = {
     
     metaContainer.innerHTML = [
       this.FileQueue.length,
-      ' '+this.i18n.files,
+      ' '+this.translate('FILES'),
       " / ",
       readableTotalSize.size,
       " ",
@@ -809,6 +806,11 @@ DnDUpload.prototype = {
     if(this.properties[name])
       this.properties[name] = value;
   },          
+  
+  
+  translate : function(key){
+    return (this.i18n[key]) ? this.i18n[key] : key;
+  },
   
   EOF: 'END OF OBJ'
 };
