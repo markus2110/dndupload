@@ -222,23 +222,7 @@ DnDUpload.prototype = {
 
           
   
-  _addEventListener : function(){
-    var _this = this;
-    
-    this.DropZone.addEventListener('click',   function(event){DnDUpload.prototype.onClick(event,_this);return false;});
-    
-    this.Element.addEventListener('dragover', function(event){DnDUpload.prototype.onDragOver(event,_this);return false;});
-    this.Element.addEventListener('dragexit', function(event){DnDUpload.prototype.onDragEnd(event,_this);return false;});
-    this.Element.addEventListener('dragleave',function(event){DnDUpload.prototype.onDragEnd(event,_this);return false;});
-    this.Element.addEventListener('dragend',  function(event){DnDUpload.prototype.onDragEnd(event,_this);return false;});
-    this.Element.addEventListener('drop',     function(event){DnDUpload.prototype.onDrop(event,_this);return false;});
-    
-    // Upload control buttons
-    this.UploadControls = document.getElementById("TotalUpload_"+this.ID).getElementsByTagName('a');
-    this.UploadControls[0].addEventListener('click', function(event){DnDUpload.prototype.cancelAll(_this);return false;});
-    this.UploadControls[1].addEventListener('click', function(event){DnDUpload.prototype.pauseAll(_this);return false;});
-    this.UploadControls[2].addEventListener('click', function(event){DnDUpload.prototype.startUpload(_this);return false;});
-  },
+
 
           
   onClick : function(event,_this){
@@ -595,15 +579,34 @@ DnDUpload.prototype = {
    * @returns void
    */
   init: function(options) {
+    
     this.ID = this.Element.id;
     
     this.setOptions(options).buildDropZone();
     
     if(this.checkBrowser()){
-//      this._addEventListener();      
+      this.addEventListener();      
     }      
   },  
   
+  
+  addEventListener : function(){
+    var _this = this;
+    
+    this.DropZone.addEventListener('click',   function(event){DnDUpload.prototype.onClick(event,_this);return false;});
+    
+    this.Element.addEventListener('dragover', function(event){DnDUpload.prototype.onDragOver(event,_this);return false;});
+    this.Element.addEventListener('dragexit', function(event){DnDUpload.prototype.onDragEnd(event,_this);return false;});
+    this.Element.addEventListener('dragleave',function(event){DnDUpload.prototype.onDragEnd(event,_this);return false;});
+    this.Element.addEventListener('dragend',  function(event){DnDUpload.prototype.onDragEnd(event,_this);return false;});
+    this.Element.addEventListener('drop',     function(event){DnDUpload.prototype.onDrop(event,_this);return false;});
+    
+    // Upload control buttons
+    this.UploadControls = document.getElementById("TotalUpload_"+this.ID).getElementsByTagName('a');
+    this.UploadControls[0].addEventListener('click', function(event){DnDUpload.prototype.cancelAll(_this);return false;});
+    this.UploadControls[1].addEventListener('click', function(event){DnDUpload.prototype.pauseAll(_this);return false;});
+    this.UploadControls[2].addEventListener('click', function(event){DnDUpload.prototype.startUpload(_this);return false;});
+  },  
   
   /**
    * 
