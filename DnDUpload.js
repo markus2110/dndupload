@@ -132,7 +132,7 @@ DnDUpload.prototype = {
      * number value should be in byte
      * @type mixed 
      */  
-    maxAllowedFileSize : '250MB',      
+    maxAllowedFileSize : '100MB',      
             
     /**
      * (string) 1MB or (number) 1048576
@@ -768,9 +768,10 @@ DnDUpload.prototype = {
       allowed = true;
     }
     
-    // check is file size
-    if(fileObj.size>this.maxAllowedFileSize){
-      var readable = this._getReadableFileSize(this.maxAllowedFileSize);
+    // check file size
+    var maxAllowedSize = this.getProperty('maxAllowedFileSize');
+    if(fileObj.size>maxAllowedSize){
+      var readable = this.getReadableFileSize(maxAllowedSize);
       var maxAllowed = readable.size + " "+readable.type;
       alert(this.translate('FILE_TOO_BIG',{FileName:fileObj.name, AllowedFileSize:maxAllowed}));
       return false;
