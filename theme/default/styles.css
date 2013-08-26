@@ -131,13 +131,16 @@
 
 .DropZone.default .FileContainer .file .fileName{  }
 
-.DropZone.default .FileContainer .file .cancel{
+.DropZone.default .FileContainer .file .button{
   font-size: 10px;
   width : 100%;
   border:solid 1px #dddddd;
   color:#5E5E5E;
 }
-
+.DropZone.default .FileContainer .file .button:hover{
+  background:#dddddd;
+  border:solid 1px #bbbbbb;
+}
 
 .DropZone.default .TotalUpload .uploadControl{
   text-align:right;

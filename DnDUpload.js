@@ -132,7 +132,7 @@ DnDUpload.prototype = {
      * number value should be in byte
      * @type mixed 
      */  
-    maxAllowedFileSize : '100MB',      
+    maxAllowedFileSize : false,      
             
     /**
      * (string) 1MB or (number) 1048576
@@ -217,8 +217,8 @@ DnDUpload.prototype = {
         '<div class="fileSize"><strong>{fileSize}</strong> {fileSizeType}</div>',
         '<div class="fileName" title="{fileName}">{fileName}</div>',
       '</div>',
-      '<div class="removeFile"><a href="#" onclick="return false;">{i18n.REMOVE}</a></div>',
-      '<button type="button" class="cancel">{i18n.CANCEL}</button>',
+      //'<div class="removeFile"><a href="#" onclick="return false;">{i18n.REMOVE}</a></div>',
+      '<button type="button" class="button"></button>',
 
     ]
   },
@@ -255,88 +255,54 @@ DnDUpload.prototype = {
 
 
 
-
-          
-  onClick : function(event,_this){
-    // find hidden input field
-    if(event.target===_this.DropZone){
-      hiddenInput = _this.Element.getElementsByClassName('hiddenFileInput')[0];
-      return hiddenInput.click();
-    }
-    return false;
-  },
-
-          
-  onDragOver : function(event,_this){
-    event.preventDefault();event.stopPropagation();      
-    var DD = _this.Element.getElementsByClassName('DropZone')[0];
-    DD.classList.add('enter');
-    return false;
-  },
+//
+//          
+//  onClick : function(event,_this){
+//    // find hidden input field
+//  },
+//
+//          
         
           
-  onDragEnd : function(event,_this){
-    event.preventDefault();event.stopPropagation();      
-    var DD = _this.Element.getElementsByClassName('DropZone')[0];
-    DD.classList.remove('enter');
-    return false;
-  },
-          
-          
-  onDrop  : function(event,_this){
-    event.preventDefault();event.stopPropagation();      
-    
-    var DD = _this.Element.getElementsByClassName('DropZone')[0];
-    
-    var files = event.dataTransfer.files;
-    _DnD.forEach(files, function(file){
-      if(typeof file === 'object')
-        _this.addFile(file);  
-    });
-    
-    _this.onDragEnd(event,_this);
-    return false;
-  },          
-          
-          
-  startUpload : function(_this){
-    _this.uploadPause=false;
-    
-    if(_this.uploadInProcess===0){
-      _DnD.forEach(_this.FileQueue, function(fileObj,index,_this){
-        _this.uploadInProcess++;
-        do{
-          console.log('not ready');
-        }while(_this.sendChunks(fileObj)==='DONE')      
-      },_this);
-    };
-
-    _this.UploadControls[0].className="stop";
-    _this.UploadControls[1].className="pause";
-    _this.UploadControls[2].className="play active";
-    
-  },
-          
-          
-  pauseAll : function(_this){
-    if(_this.uploadInProcess>0){
-      _this.uploadPause = true;
-      _this.UploadControls[0].className="stop";
-      _this.UploadControls[1].className="pause active";
-      _this.UploadControls[2].className="play";
-    }
-    
-  },          
-
-
-  cancelAll : function(_this){
-    console.log('Cancel');
-    _this.uploadInProcess = 0;
-    _this.uploadPause     = false;
-    _this.UploadControls[0].className="stop active";
-    _this.UploadControls[1].className="pause";
-    _this.UploadControls[2].className="play";
-  },            
+//          
+//  startUpload : function(_this){
+//    _this.uploadPause=false;
+//    
+//    if(_this.uploadInProcess===0){
+//      _DnD.forEach(_this.FileQueue, function(fileObj,index,_this){
+//        _this.uploadInProcess++;
+//        do{
+//          console.log('not ready');
+//        }while(_this.sendChunks(fileObj)==='DONE')      
+//      },_this);
+//    };
+//
+//    _this.UploadControls[0].className="stop";
+//    _this.UploadControls[1].className="pause";
+//    _this.UploadControls[2].className="play active";
+//    
+//  },
+//          
+//          
+//  pauseAll : function(_this){
+//    if(_this.uploadInProcess>0){
+//      _this.uploadPause = true;
+//      _this.UploadControls[0].className="stop";
+//      _this.UploadControls[1].className="pause active";
+//      _this.UploadControls[2].className="play";
+//    }
+//    
+//  },          
+//
+//
+//  cancelAll : function(_this){
+//    console.log('Cancel');
+//    _this.uploadInProcess = 0;
+//    _this.uploadPause     = false;
+//    _this.UploadControls[0].className="stop active";
+//    _this.UploadControls[1].className="pause";
+//    _this.UploadControls[2].className="play";
+//  },            
             
     sendChunks : function(fileObj, totalSend){
       
@@ -427,73 +393,6 @@ DnDUpload.prototype = {
 
           
           
-  _removeFile : function(file, _this){
-    
-    // todo : cancel Upload
-    
-    
-    var newQueue = [];
-    _DnD.forEach(_this.FileQueue,function(fileObj,index,_that){
-      if(fileObj.fileEl !== file){
-        newQueue.push(fileObj);
-      }
-      
-      // reduce total file size
-      else{
-        _that.totalFileSize -= fileObj.file.size;
-      }
-    },_this);
-    _this.FileQueue = newQueue;
-
-    var parentEl = file.parentElement;
-    parentEl.removeChild(file);
-    
-    _this._calculateTotal();
-  },
-          
-          
-
-          
-  _getFileType : function(type){
-    if(type.indexOf('video')>=0) 
-      fileType = 'movie';
-    else if(type.indexOf('zip')>=0) 
-      fileType = 'zip';
-    else if(type.indexOf('image')>=0)
-      fileType = 'image';
-    else 
-      fileType = 'doc';
-
-    return fileType;
-  },          
-          
-          
-  
-          
-  _prepareString : function(_string, varObj){
-    var tempVars = _string.match(/\{.*?\}/g);
-
-    
-    if(!varObj){
-      return _string;
-    }
-    
-    _DnD.forEach(tempVars,function(varName){
-      var propName  = varName.substring(1,varName.length-1);
-      var replace   = (varObj && varObj[propName]) ? varObj[propName] : propName;  
-      _string = _string.replace(varName, replace);
-    });
-    
-    return _string;
-    
-  },
-          
-          
-  
-
-          
-          
-
 
 
   // NEW
@@ -522,25 +421,147 @@ DnDUpload.prototype = {
     /**
      * Add Click event to DropZone Element
      */
-    this.DropZone.addEventListener('click',   function(event){DnDUpload.prototype.onClick(event,_this);return false;});
+    this.DropZone.addEventListener('click',   function(event){_this.listeners.onClick(event,_this);return false;});
     
     /**
      * Drag n' Drop Listeners
      */
-    this.Element.addEventListener('dragover', function(event){DnDUpload.prototype.onDragOver(event,_this);return false;});
-    this.Element.addEventListener('dragexit', function(event){DnDUpload.prototype.onDragEnd(event,_this);return false;});
-    this.Element.addEventListener('dragleave',function(event){DnDUpload.prototype.onDragEnd(event,_this);return false;});
-    this.Element.addEventListener('dragend',  function(event){DnDUpload.prototype.onDragEnd(event,_this);return false;});
-    this.Element.addEventListener('drop',     function(event){DnDUpload.prototype.onDrop(event,_this);return false;});
+    this.Element.addEventListener('dragover', function(event){_this.listeners.onDragOver(event,_this);return false;});
+    this.Element.addEventListener('dragexit', function(event){_this.listeners.onDragEnd(event,_this);return false;});
+    this.Element.addEventListener('dragleave',function(event){_this.listeners.onDragEnd(event,_this);return false;});
+    this.Element.addEventListener('dragend',  function(event){_this.listeners.onDragEnd(event,_this);return false;});
+    this.Element.addEventListener('drop',     function(event){_this.listeners.onDrop(event,_this);return false;});
 
     /**
      * Control buttons
      */
     this.UploadControls = document.getElementById("UploadControls_"+this.ID).getElementsByTagName('a');
-    this.UploadControls[0].addEventListener('click', function(event){DnDUpload.prototype.cancelAll(_this);return false;});
-    this.UploadControls[1].addEventListener('click', function(event){DnDUpload.prototype.pauseAll(_this);return false;});
-    this.UploadControls[2].addEventListener('click', function(event){DnDUpload.prototype.startUpload(_this);return false;});
-  },  
+    this.UploadControls[0].addEventListener('click', function(event){_this.listeners.onCancel(_this);return false;});
+    this.UploadControls[1].addEventListener('click', function(event){_this.listeners.onPause(_this);return false;});
+    this.UploadControls[2].addEventListener('click', function(event){_this.listeners.onUploadStart(_this);return false;});
+  },
+          
+          
+  listeners : {
+
+    /**
+     * 
+     * @param {type} event
+     * @param DnDUpload.prototype _this
+     * @returns {@exp;hiddenInput@call;click|Boolean}
+     */
+    onClick       : function(event,_this){
+      if(event.target===_this.DropZone){
+        hiddenInput = _this.Element.getElementsByClassName('hiddenFileInput')[0];
+        return hiddenInput.click();
+      }
+      return false;
+    },
+            
+
+    /**
+     * Element is over drop zone
+     * 
+     * @param {type} event
+     * @param DnDUpload.prototype _this
+     * @returns false
+     */
+    onDragOver : function(event,_this){
+      event.preventDefault();event.stopPropagation();      
+      var DD = _this.Element.getElementsByClassName('DropZone')[0];
+      DD.classList.add('enter');
+      return false;
+    },
+        
+     /**
+      * 
+      * @param {type} event
+      * @param {type} _this
+      * @returns {Boolean}
+      */
+    onDragEnd : function(event,_this){
+      event.preventDefault();event.stopPropagation();      
+      var DD = _this.Element.getElementsByClassName('DropZone')[0];
+      DD.classList.remove('enter');
+      return false;
+    },
+          
+    /**
+     * 
+     * @param {type} event
+     * @param {type} _this
+     * @returns false
+     */
+    onDrop  : function(event,_this){
+      event.preventDefault();event.stopPropagation();      
+
+      var DD = _this.Element.getElementsByClassName('DropZone')[0];
+
+      var files = event.dataTransfer.files;
+      _DnD.forEach(files, function(file){
+        if(typeof file === 'object')
+          _this.addFile(file);  
+      });
+
+      this.onDragEnd(event,_this);
+      return false;
+    },              
+            
+
+    /**
+     * 
+     * @param Object file
+     * @param DnDUpload.prototype _this
+     * @returns void
+     */        
+    onFileRemove : function(file, _this){
+
+      // todo : cancel Upload
+      var newQueue = [];
+      _DnD.forEach(_this.FileQueue,function(fileObj,index,_that){
+        if(fileObj.fileEl !== file){
+          newQueue.push(fileObj);
+        }
+
+        // reduce total file size
+        else{
+          _that.totalFileSize -= fileObj.file.size;
+        }
+      },_this);
+      _this.FileQueue = newQueue;
+
+      var parentEl = file.parentElement;
+      parentEl.removeChild(file);
+
+      _this.calculateTotal();
+    },          
+       
+       
+            
+    onCancel      : function(){},
+    onPause       : function(){},
+    
+            
+    onUploadStart : function(_this){
+      _this.uploadPause=false;
+
+      if(_this.uploadInProcess===0){
+        _DnD.forEach(_this.FileQueue, function(fileObj,index,_this){
+          _this.setFileButtonAction('pause',fileObj.fileEl)
+          _this.uploadInProcess++;
+          do{
+            console.log('not ready');
+          }while(_this.sendChunks(fileObj)==='DONE')      
+        },_this);
+      };
+
+//      _this.UploadControls[0].className="stop";
+//      _this.UploadControls[1].className="pause";
+//      _this.UploadControls[2].className="play active";      
+      
+      
+    }
+  },
   
   /**
    * 
@@ -659,7 +680,7 @@ DnDUpload.prototype = {
    */
   calculateTotal : function(){
     var metaContainer       = document.getElementById("UploadControlContainer_"+this.ID).getElementsByTagName('span')[0];
-    var readableTotalSize   = this.getReadableFileSize(this.totalFileSize,true);
+    var readableTotalSize   = this.getReadableFileSize(this.totalFileSize,2);
     
     metaContainer.innerHTML = [
       this.FileQueue.length,
@@ -676,10 +697,17 @@ DnDUpload.prototype = {
    * returns a human readable file size object
    * 
    * @param Number size
-   * @param bool precision
+   * @param bool decimal Sets the number of decimal points.  
    * @returns Object
    */
-  getReadableFileSize : function(size, precision){
+  getReadableFileSize : function(size, decimal){
+    
+    if(decimal){
+      var decimalCount = decimal;
+      decimal = parseInt("1"+decimal.toFixed(decimal).substr(2));
+      
+    }
+    
     var obj = {size: size, type : 'byte'};
     if(size<1024) return obj;
     for(maxSize in this.sizeType){
@@ -687,22 +715,32 @@ DnDUpload.prototype = {
         break;
 
       s = size/maxSize;
-      obj.size = (precision) ? Math.round(s * 100) / 100 : Math.round(s);
+      obj.size = (decimal) ? Math.round(s * 100) / decimal : Math.round(s);
       obj.type = this.sizeType[maxSize];
     };    
     return obj;
   },  
 
 
+  /**
+   * Adds a file
+   * Check is 
+   *  file already exist in FileQueue 
+   *  file type allowed
+   *  file size ok
+   * 
+   * @param Object fileObj
+   * @returns void
+   */
   addFile : function(fileObj){
     var _this = this;
     
     if(this.checkFile(fileObj)){
-      var readableFile = this.getReadableFileSize(fileObj.size);
+      var readableFile = this.getReadableFileSize(fileObj.size,2);
 
       var tempVars = {
         fileName      : fileObj.name,
-        fileType      : this._getFileType(fileObj.type),
+        fileType      : this.getFileType(fileObj.type),
         fileSize      : readableFile.size,
         fileSizeType  : readableFile.type,
       }
@@ -710,9 +748,8 @@ DnDUpload.prototype = {
       file.className = 'file';
       file.innerHTML = this.prepareTemplate(this.templates.fileTpl,tempVars);
 
-      var removeTag = file.getElementsByTagName('a')[0];
-      removeTag.addEventListener('click', function(event){DnDUpload.prototype._removeFile(file,_this)});
-
+      _this.setFileButtonAction('remove',file);
+      
       document.getElementById("FileContainer_"+this.ID).appendChild(file);
 
       this.FileQueue.push({
@@ -727,6 +764,49 @@ DnDUpload.prototype = {
       this.calculateTotal();      
     }
   },
+          
+          
+  setFileButtonAction : function(action,file){
+    _this = this;
+    var fileBtn = file.getElementsByTagName('button')[0];
+    switch(action){
+      case 'pause':
+        fileBtn.innerHTML = this.translate('PAUSE');
+        fileBtn.addEventListener('click', function(event){_this.listeners.onPause(file,_this)});
+        break;      
+      
+      case 'cancel':
+        fileBtn.innerHTML = this.translate('CANCEL');
+        fileBtn.addEventListener('click', function(event){_this.listeners.onCancel(file,_this)});
+        break;
+      
+      case 'remove':
+      default:
+        fileBtn.innerHTML = this.translate('REMOVE');
+        fileBtn.addEventListener('click', function(event){_this.listeners.onFileRemove(file,_this)});
+        break;
+    }
+  },
+  
+   
+  /**
+   * returns the file type
+   * 
+   * @param String type
+   * @returns String
+   */        
+  getFileType : function(type){
+    if(type.indexOf('video')>=0) 
+      fileType = 'movie';
+    else if(type.indexOf('zip')>=0) 
+      fileType = 'zip';
+    else if(type.indexOf('image')>=0)
+      fileType = 'image';
+    else 
+      fileType = 'doc';
+
+    return fileType;
+  },           
           
   /**
    * Checks is filetype allowed and is file not already exists in FileQueue
@@ -770,7 +850,7 @@ DnDUpload.prototype = {
     
     // check file size
     var maxAllowedSize = this.getProperty('maxAllowedFileSize');
-    if(fileObj.size>maxAllowedSize){
+    if(maxAllowedSize !== false && fileObj.size>maxAllowedSize){
       var readable = this.getReadableFileSize(maxAllowedSize);
       var maxAllowed = readable.size + " "+readable.type;
       alert(this.translate('FILE_TOO_BIG',{FileName:fileObj.name, AllowedFileSize:maxAllowed}));
@@ -782,12 +862,19 @@ DnDUpload.prototype = {
     return allowed;
   },
   
-  
+  /**
+   * creates a image preview
+   * 
+   * @param Object fileObj
+   * @param Object el
+   * @returns void
+   */
   setPreviewImage : function(fileObj,el){
     if(fileObj)
     var reader = new FileReader();
     reader.onload = function(e){
       if(e.target.result){
+        progressBar[0].style.width = '100%';         
         var previewImg = document.createElement('img');
         previewImg.src    = e.target.result;
         previewImg.title  = fileObj.name;
@@ -800,6 +887,7 @@ DnDUpload.prototype = {
 
         // set image to center
         previewImg.onload = function(img){
+          progressBar[0].style.width = '0%';         
           if(img.target.height < preview.clientHeight){
             var newPos = preview.clientHeight - img.target.height;
             previewImg.style.marginTop = Math.round(newPos/2)+'px';
@@ -807,6 +895,13 @@ DnDUpload.prototype = {
         };
       };
     }
+    
+    var progressBar = el.getElementsByTagName('span');
+    reader.onprogress = function(p){
+      var p = Math.round((p.loaded/p.total)*100);
+      progressBar[0].style.width = p+'%';         
+    }
+    
     reader.readAsDataURL(fileObj);
   },
 
