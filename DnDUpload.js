@@ -114,6 +114,14 @@ DnDUpload.prototype = {
   properties :{
     
     /**
+     * set to true to enable autoupload
+     * upload immediately starts after drop event
+     * @type Boolean
+     * @todo: not in use yet
+     */
+    autoUpload      : false,
+    
+    /**
      * 
      * @type Array
      */
@@ -182,13 +190,13 @@ DnDUpload.prototype = {
         '<div id="DropText_{ID}" class="DropText">{i18n.DROP_TEXT}</div>',
       '</form>',
 
-      '<div id="TotalUpload_{ID}" class="TotalUpload">',
+      '<div id="UploadControlContainer_{ID}" class="TotalUpload">',
         '<div class="progress"><div id="TotalUploadProgress_{ID}" style="width:0%">&nbsp;</div></div>',
         '<div class="meta">',
           '<div class="percentage">0%</div>',
           '<span>&nbsp</span>',
-          '<div class="uploadControl">',
-          '<a href="javascript:void(0);"    class="stop" title="{i18n.STOP}">&nbsp;</a>',
+          '<div id="UploadControls_{ID}" class="uploadControl">',
+            '<a href="javascript:void(0);"    class="stop" title="{i18n.STOP}">&nbsp;</a>',
             '<a href="javascript:void(0);"  class="pause" title="{i18n.PAUSE}">&nbsp;</a>',
             '<a href="javascript:void(0);"  class="play" title="{i18n.PLAY}">&nbsp;</a>',
           '</div>',
@@ -200,7 +208,7 @@ DnDUpload.prototype = {
      * File Template
      * @type Array
      */
-    fileTemplate: [
+    fileTpl: [
       '<div class="preview {fileType}">',
         //'<div class="statusIcon complete"></div>',
       '</div>',
@@ -214,14 +222,38 @@ DnDUpload.prototype = {
 
     ]
   },
+          
+          
+  /**
+   * 
+   * @param Array template
+   * @param Object varObj
+   * @returns String
+   */
+  prepareTemplate : function(template, varObj){
+    var html = template.join("");
+    var tempVars = html.match(/\{.*?\}/g);
+    
+    _DnD.forEach(tempVars,function(varName,index,_this){
+      var propName = varName.substring(1,varName.length-1);
+      
+      // use i18n value
+      if(propName.indexOf('i18n')>=0){
+        var i18nVar = propName.substring(5);
+        var value = (_this.translate(i18nVar)) ?_this.translate(i18nVar) : i18nVar;
+      }else{
+        var value = (varObj && varObj[propName]) ? varObj[propName] : _this[propName];  
+      }
+      
+      html = html.replace(varName, value);
+    },this);      
+    
+    return html;
+  },          
   
 
-          
-          
-          
 
-          
-  
+
 
 
           
@@ -392,114 +424,7 @@ DnDUpload.prototype = {
        
           
           
-  addFile : function(fileObj){
-    var _this = this;
-    
-    if(this.checkFile(fileObj)){
-      var readableFile = this._getReadableFileSize(fileObj.size);
 
-      var tempVars = {
-        fileName      : fileObj.name,
-        fileType      : this._getFileType(fileObj.type),
-        fileSize      : readableFile.size,
-        fileSizeType  : readableFile.type,
-      }
-      var file = document.createElement('div');
-      file.className = 'file';
-      file.innerHTML = this._prepareTemplate(this.fileTemplate,tempVars);
-
-      var removeTag = file.getElementsByTagName('a')[0];
-      removeTag.addEventListener('click', function(event){DnDUpload.prototype._removeFile(file,_this)});
-
-      document.getElementById("FileContainer_"+this.ID).appendChild(file);
-
-      this.FileQueue.push({
-        file    : fileObj,
-        fileEl  : file
-      });
-
-      if(tempVars.fileType === 'image')
-        this.setPreviewImage(fileObj,file);
-
-      this.totalFileSize += fileObj.size;
-      this._calculateTotal();      
-    }
-  },
-          
-  /**
-   * Checks is filetype allowed and is file not already exists in FileQueue
-   * 
-   * @param {object} fileObj
-   * @returns {Boolean}
-   */        
-  checkFile : function(fileObj){
-    var allowed = false;
-
-    // check is file allowed
-    if(this.allowedFileTypes !== null){
-      var filePrefix = fileObj.name.split(".");
-      filePrefix = filePrefix[filePrefix.length-1];
-      for(i in this.allowedFileTypes){
-        if(typeof this.allowedFileTypes[i] === 'string' && filePrefix===this.allowedFileTypes[i]){
-          allowed = true;
-          break;
-        }
-      }
-      if(!allowed){
-        alert(this._prepareString(this.translate('FILE_NOT_ALLOWED'),{FileType:filePrefix}));
-        return false;
-      }
-    }
-
-    // check is file already exists
-    var fileNameUploaded = fileObj.name;
-    if(this.FileQueue.length > 0){
-      for(file in this.FileQueue){
-        var fileName  = this.FileQueue[file].file.name;
-        if(fileNameUploaded === fileName){
-          alert(this._prepareString(this.translate('FILE_ALREADY_EXISTS'),{FileName:fileObj.name}));
-          return false;
-        }
-      }      
-      allowed = true;
-    }
-    
-    // check is file size
-    if(fileObj.size>this.maxAllowedFileSize){
-      var readable = this._getReadableFileSize(this.maxAllowedFileSize);
-      var maxAllowed = readable.size + " "+readable.type;
-      alert(this._prepareString(this.translate('FILE_TOO_BIG'),{FileName:fileObj.name, AllowedFileSize:maxAllowed}));
-      return false;
-    }else{
-      allowed = true;
-    }
-
-    return allowed;
-  },
-  
-  
-  setPreviewImage : function(fileObj,el){
-    if(fileObj)
-    var reader = new FileReader();
-    reader.onload = function(e){
-      if(e.target.result){
-        
-        console.log(el.getElementsByTagName('div'));
-        
-        var previewImg = document.createElement('img');
-        previewImg.src    = e.target.result;
-        previewImg.title  = fileObj.name;
-        previewImg.alt    = fileObj.name;
-        previewImg.style.width  = "100%";
-
-        var preview = el.getElementsByTagName('div')[0];
-        preview.appendChild(previewImg);
-      };
-    }
-    reader.readAsDataURL(fileObj);
-    
-    console.log(fileObj);
-  },
           
           
   _removeFile : function(file, _this){
@@ -593,16 +518,25 @@ DnDUpload.prototype = {
   addEventListener : function(){
     var _this = this;
     
+    
+    /**
+     * Add Click event to DropZone Element
+     */
     this.DropZone.addEventListener('click',   function(event){DnDUpload.prototype.onClick(event,_this);return false;});
     
+    /**
+     * Drag n' Drop Listeners
+     */
     this.Element.addEventListener('dragover', function(event){DnDUpload.prototype.onDragOver(event,_this);return false;});
     this.Element.addEventListener('dragexit', function(event){DnDUpload.prototype.onDragEnd(event,_this);return false;});
     this.Element.addEventListener('dragleave',function(event){DnDUpload.prototype.onDragEnd(event,_this);return false;});
     this.Element.addEventListener('dragend',  function(event){DnDUpload.prototype.onDragEnd(event,_this);return false;});
     this.Element.addEventListener('drop',     function(event){DnDUpload.prototype.onDrop(event,_this);return false;});
-    
-    // Upload control buttons
-    this.UploadControls = document.getElementById("TotalUpload_"+this.ID).getElementsByTagName('a');
+
+    /**
+     * Control buttons
+     */
+    this.UploadControls = document.getElementById("UploadControls_"+this.ID).getElementsByTagName('a');
     this.UploadControls[0].addEventListener('click', function(event){DnDUpload.prototype.cancelAll(_this);return false;});
     this.UploadControls[1].addEventListener('click', function(event){DnDUpload.prototype.pauseAll(_this);return false;});
     this.UploadControls[2].addEventListener('click', function(event){DnDUpload.prototype.startUpload(_this);return false;});
@@ -666,33 +600,7 @@ DnDUpload.prototype = {
   },          
 
 
-  /**
-   * 
-   * @param Array template
-   * @param Object varObj
-   * @returns String
-   */
-  prepareTemplate : function(template, varObj){
-    var html = template.join("");
-    var tempVars = html.match(/\{.*?\}/g);
-    
-    _DnD.forEach(tempVars,function(varName,index,_this){
-      var propName = varName.substring(1,varName.length-1);
-      
-      // use i18n value
-      if(propName.indexOf('i18n')>=0){
-        var i18nVar = propName.substring(5);
-        var value = (_this.translate(i18nVar)) ?_this.translate(i18nVar) : i18nVar;
-      }else{
-        var value = (varObj && varObj[propName]) ? varObj[propName] : _this[propName];  
-      }
-      
-      html = html.replace(varName, value);
-    },this);      
-    
-    
-    return html;
-  },
+
   
   /**
    * Check nrowser support for FileReader
@@ -750,7 +658,7 @@ DnDUpload.prototype = {
    * @returns void
    */
   calculateTotal : function(){
-    var metaContainer       = document.getElementById("TotalUpload_"+this.ID).getElementsByTagName('span')[0];
+    var metaContainer       = document.getElementById("UploadControlContainer_"+this.ID).getElementsByTagName('span')[0];
     var readableTotalSize   = this.getReadableFileSize(this.totalFileSize,true);
     
     metaContainer.innerHTML = [
@@ -786,6 +694,121 @@ DnDUpload.prototype = {
   },  
 
 
+  addFile : function(fileObj){
+    var _this = this;
+    
+    if(this.checkFile(fileObj)){
+      var readableFile = this.getReadableFileSize(fileObj.size);
+
+      var tempVars = {
+        fileName      : fileObj.name,
+        fileType      : this._getFileType(fileObj.type),
+        fileSize      : readableFile.size,
+        fileSizeType  : readableFile.type,
+      }
+      var file = document.createElement('div');
+      file.className = 'file';
+      file.innerHTML = this.prepareTemplate(this.templates.fileTpl,tempVars);
+
+      var removeTag = file.getElementsByTagName('a')[0];
+      removeTag.addEventListener('click', function(event){DnDUpload.prototype._removeFile(file,_this)});
+
+      document.getElementById("FileContainer_"+this.ID).appendChild(file);
+
+      this.FileQueue.push({
+        file    : fileObj,
+        fileEl  : file
+      });
+
+      if(tempVars.fileType === 'image')
+        this.setPreviewImage(fileObj,file);
+
+      this.totalFileSize += fileObj.size;
+      this.calculateTotal();      
+    }
+  },
+          
+  /**
+   * Checks is filetype allowed and is file not already exists in FileQueue
+   * 
+   * @param {object} fileObj
+   * @returns {Boolean}
+   */        
+  checkFile : function(fileObj){
+    var allowed = false;
+    
+    
+    // check is file allowed
+    var allowedFileTypes = this.getProperty('allowedFileTypes');
+    if(allowedFileTypes !== false){
+      var filePrefix = fileObj.name.split(".");
+      filePrefix = filePrefix[filePrefix.length-1];
+      for(i in allowedFileTypes){
+        if(typeof allowedFileTypes[i] === 'string' && filePrefix===allowedFileTypes[i]){
+          allowed = true;
+          break;
+        }
+      }
+      if(!allowed){
+        alert(this.translate('FILE_NOT_ALLOWED',{FileType:filePrefix}));
+        return false;
+      }
+    }
+
+    // check is file already exists
+    var fileNameUploaded = fileObj.name;
+    if(this.FileQueue.length > 0){
+      for(file in this.FileQueue){
+        var fileName  = this.FileQueue[file].file.name;
+        if(fileNameUploaded === fileName){
+          alert(this.translate('FILE_ALREADY_EXISTS',{FileName:fileObj.name}));
+          return false;
+        }
+      }      
+      allowed = true;
+    }
+    
+    // check is file size
+    if(fileObj.size>this.maxAllowedFileSize){
+      var readable = this._getReadableFileSize(this.maxAllowedFileSize);
+      var maxAllowed = readable.size + " "+readable.type;
+      alert(this.translate('FILE_TOO_BIG',{FileName:fileObj.name, AllowedFileSize:maxAllowed}));
+      return false;
+    }else{
+      allowed = true;
+    }
+
+    return allowed;
+  },
+  
+  
+  setPreviewImage : function(fileObj,el){
+    if(fileObj)
+    var reader = new FileReader();
+    reader.onload = function(e){
+      if(e.target.result){
+        var previewImg = document.createElement('img');
+        previewImg.src    = e.target.result;
+        previewImg.title  = fileObj.name;
+        previewImg.alt    = fileObj.name;
+        previewImg.style.width  = "100%";
+
+        var preview = el.getElementsByTagName('div')[0];
+        preview.className = preview.className.replace('image','');
+        preview.appendChild(previewImg);
+
+        // set image to center
+        previewImg.onload = function(img){
+          if(img.target.height < preview.clientHeight){
+            var newPos = preview.clientHeight - img.target.height;
+            previewImg.style.marginTop = Math.round(newPos/2)+'px';
+          }
+        };
+      };
+    }
+    reader.readAsDataURL(fileObj);
+  },
+
   /**
    * returns the property value
    * @param String name
@@ -811,12 +834,29 @@ DnDUpload.prototype = {
   },          
   
   
-  translate : function(key){
-    return (this.i18n[key]) ? this.i18n[key] : key;
+  translate : function(key, varObj){
+    var _string   = (this.i18n[key]) ? this.i18n[key] : key;
+    var tempVars  = _string.match(/\{.*?\}/g);
+    
+    if(!varObj){
+      return _string;
+    }
+    
+    _DnD.forEach(tempVars,function(varName){
+      var propName  = varName.substring(1,varName.length-1);
+      var replace   = (varObj && varObj[propName]) ? varObj[propName] : propName;  
+      _string = _string.replace(varName, replace);
+    });
+    
+    return _string;    
   },
   
   EOF: 'END OF OBJ'
 };
+
+
+
+DnDUpload.prototype.xhr = {};
 
 
 
