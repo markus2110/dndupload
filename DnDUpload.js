@@ -5,13 +5,15 @@
  * http://helephant.com/2009/08/17/javascript-prototype-chaining/
  */
 
+"use strict";
+
 /**
  * DnDUpload Helper Class
  * @type Object
  */
 var _DnD = {
   forEach : function(obj, callback, scope) {
-    for (_key in obj) {
+    for (var _key in obj) {
       if (typeof obj[_key] !== 'function')
       callback(obj[_key],_key,scope);
     }
@@ -128,14 +130,14 @@ DnDUpload.prototype = {
      * number value should be in byte
      * @type mixed 
      */  
-    maxAllowedFileSize : false,      
+    maxAllowedFileSize : '150mb',      
             
     /**
      * (string) 1MB or (number) 1048576
      * number value should be in byte
      * @type mixed 
      */
-    maxServerUploadSize : '512kb',
+    maxServerUploadSize : '512kb', //todo: just for test, should be the real server settings
             
     /**
      * 
@@ -302,6 +304,8 @@ DnDUpload.prototype = {
      * @returns {@exp;hiddenInput@call;click|Boolean}
      */
     onClick       : function(event,_this){
+      var hiddenInput;
+      
       if(event.target===_this.DropZone){
         hiddenInput = _this.Element.getElementsByClassName('hiddenFileInput')[0];
         return hiddenInput.click();
@@ -548,14 +552,15 @@ DnDUpload.prototype = {
    * @returns Object
    */
   getReadableFileSize : function(size, decimal){
+    var obj,maxSize,decimalCount,s;
+    
     
     if(decimal){
-      var decimalCount = decimal;
+      decimalCount = decimal;
       decimal = parseInt("1"+decimal.toFixed(decimal).substr(2));
-      
     }
     
-    var obj = {size: size, type : 'byte'};
+    obj = {size: size, type : 'byte'};
     if(size<1024) return obj;
     for(maxSize in this.sizeType){
       if(size<=maxSize)
@@ -613,10 +618,11 @@ DnDUpload.prototype = {
   },
           
           
-  setFileButtonAction : function(action,fileEl){
-    _this = this;
+  setFileButtonAction : function(action,file){
+    var _this = this;
+    
+    var fileBtn = file.getElementsByTagName('button')[0];
     action = action.toLowerCase();
-    var fileBtn = fileEl.getElementsByTagName('button')[0];
     switch(action){
       case 'pause':
         fileBtn.innerHTML = this.translate('PAUSE');
@@ -644,6 +650,8 @@ DnDUpload.prototype = {
    * @returns String
    */        
   getFileType : function(type){
+    var fileType;
+    
     if(type.indexOf('video')>=0) 
       fileType = 'movie';
     else if(type.indexOf('zip')>=0) 
@@ -663,7 +671,7 @@ DnDUpload.prototype = {
    * @returns {Boolean}
    */        
   checkFile : function(fileObj){
-    var allowed = false;
+    var allowed = false, file,i;
     
     
     // check is file allowed
